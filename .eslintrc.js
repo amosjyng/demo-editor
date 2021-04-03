@@ -21,5 +21,10 @@ module.exports = {
     ],
     "rules": {
         "react/react-in-jsx-scope": "off" // React import now optional in v17
+    },
+    "settings": {
+        "react": {
+            "version": "detect",
+        }
     }
 };
