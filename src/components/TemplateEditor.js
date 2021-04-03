@@ -15,6 +15,7 @@ class TemplateEditor extends React.Component {
     ]);
     this.state = { editorState: EditorState.createEmpty(decorator) };
     this.onChange = (editorState) => this.setState({ editorState });
+    this.editor = React.createRef();
   }
 
   /** Create a strategy to identify parameters in a block */
@@ -45,11 +46,19 @@ class TemplateEditor extends React.Component {
     });
   };
 
+  componentDidUpdate() {
+    this.editor.current.focus();
+  }
+
   render() {
     return (
       <div className="TemplateEditor">
         <Toolbar onParameterize={this.onParameterize} />
-        <Editor editorState={this.state.editorState} onChange={this.onChange} />
+        <Editor
+          ref={this.editor}
+          editorState={this.state.editorState}
+          onChange={this.onChange}
+        />
       </div>
     );
   }
