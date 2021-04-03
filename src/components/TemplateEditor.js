@@ -3,6 +3,7 @@ import { CompositeDecorator, Editor, EditorState, Modifier } from "draft-js";
 import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 import ParameterEntity from "./ParameterEntity";
+import HighlightEntity from "./HighlightEntity";
 
 const HIGHLIGHT_ENTITY = "HIGHLIGHT";
 
@@ -13,6 +14,10 @@ class TemplateEditor extends React.Component {
       {
         strategy: this.parameterStrategy,
         component: ParameterEntity,
+      },
+      {
+        strategy: this.highlightStrategy,
+        component: HighlightEntity,
       },
     ]);
     this.state = { editorState: EditorState.createEmpty(decorator) };
@@ -28,6 +33,13 @@ class TemplateEditor extends React.Component {
       start = parameterMatch.index;
       callback(start, start + parameterMatch[0].length);
     }
+  };
+
+  /** Create a strategy to identify highlights in a block */
+  highlightStrategy = (block, callback) => {
+    block.findEntityRanges((charMetadata) => {
+      return charMetadata.getEntity() !== null;
+    }, callback);
   };
 
   /** Create a new parameter in the template */
