@@ -9,15 +9,22 @@ module.exports = {
         "plugin:react/recommended",
         "plugin:prettier/recommended",
     ],
+    "parser": "@babel/eslint-parser",
     "parserOptions": {
+        "babelOptions": {
+            "presets": ["@babel/preset-react"],
+            "plugins": ["@babel/plugin-proposal-class-properties"],
+        },
         "ecmaFeatures": {
             "jsx": true
         },
         "ecmaVersion": 12,
+        "requireConfigFile": false,
         "sourceType": "module"
     },
     "plugins": [
-        "react"
+        "react",
+        "@babel",
     ],
     "rules": {
         "react/react-in-jsx-scope": "off" // React import now optional in v17
