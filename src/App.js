@@ -1,10 +1,8 @@
-import './App.css';
-import TemplateEditor from './components/TemplateEditor';
+import "./App.css";
+import TemplateEditor from "./components/TemplateEditor";
 
 function App() {
-  return (
-    <TemplateEditor />
-  );
+  return <TemplateEditor />;
 }
 
 export default App;
