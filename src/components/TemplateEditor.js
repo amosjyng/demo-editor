@@ -14,7 +14,6 @@ class TemplateEditor extends React.Component {
       },
     ]);
     this.state = { editorState: EditorState.createEmpty(decorator) };
-    this.onChange = (editorState) => this.setState({ editorState });
     this.editor = React.createRef();
   }
 
@@ -45,6 +44,34 @@ class TemplateEditor extends React.Component {
       ),
     });
   };
+
+  /** Create a new highlight in the template */
+  onHighlight = (editorState) => {
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      const contentState = editorState.getCurrentContent();
+      const block = contentState.getBlockForKey(selection.getStartKey());
+      const text = block
+        .getText()
+        .slice(selection.getStartOffset(), selection.getEndOffset());
+      console.log("selection is " + text);
+    }
+  };
+
+  onChange = (newState) => {
+    if (
+      newState.getCurrentContent() ===
+      this.state.editorState.getCurrentContent()
+    ) {
+      // none of the text changed, must be a selection change
+      this.onHighlight(newState);
+    }
+    this.setState({ editorState: newState });
+  };
+
+  componentDidMount() {
+    this.editor.current.focus();
+  }
 
   componentDidUpdate() {
     this.editor.current.focus();
