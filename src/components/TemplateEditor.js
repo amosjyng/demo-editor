@@ -1,5 +1,6 @@
 import React from "react";
 import { Editor, EditorState } from "draft-js";
+import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 
 class TemplateEditor extends React.Component {
@@ -11,7 +12,10 @@ class TemplateEditor extends React.Component {
 
   render() {
     return (
-      <Editor editorState={this.state.editorState} onChange={this.onChange} />
+      <div className="TemplateEditor">
+        <Toolbar />
+        <Editor editorState={this.state.editorState} onChange={this.onChange} />
+      </div>
     );
   }
 }
