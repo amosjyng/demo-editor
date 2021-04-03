@@ -4,6 +4,8 @@ import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 import ParameterEntity from "./ParameterEntity";
 
+const HIGHLIGHT_ENTITY = "HIGHLIGHT";
+
 class TemplateEditor extends React.Component {
   constructor(props) {
     super(props);
@@ -51,11 +53,39 @@ class TemplateEditor extends React.Component {
     if (!selection.isCollapsed()) {
       const contentState = editorState.getCurrentContent();
       const block = contentState.getBlockForKey(selection.getStartKey());
-      const text = block
-        .getText()
-        .slice(selection.getStartOffset(), selection.getEndOffset());
-      console.log("selection is " + text);
+      const existingEntityKey = block.getEntityAt(selection.getStartOffset());
+      if (existingEntityKey === null) {
+        const withEntity = contentState.createEntity(
+          HIGHLIGHT_ENTITY,
+          "MUTABLE"
+        );
+        const entityKey = withEntity.getLastCreatedEntityKey();
+        console.log("New highlight " + entityKey);
+        const withHighlight = Modifier.applyEntity(
+          withEntity,
+          selection,
+          entityKey
+        );
+        const newEditorState = EditorState.set(editorState, {
+          currentContent: withHighlight,
+        });
+        console.log(
+          "Entity created: " +
+            newEditorState
+              .getCurrentContent()
+              .getEntity(
+                newEditorState
+                  .getCurrentContent()
+                  .getBlockForKey(selection.getStartKey())
+                  .getEntityAt(selection.getStartOffset())
+              )
+        );
+        return newEditorState;
+      } else {
+        console.log("Highlight already exists at location, not recreating.");
+      }
     }
+    return editorState;
   };
 
   onChange = (newState) => {
@@ -64,7 +94,7 @@ class TemplateEditor extends React.Component {
       this.state.editorState.getCurrentContent()
     ) {
       // none of the text changed, must be a selection change
-      this.onHighlight(newState);
+      newState = this.onHighlight(newState);
     }
     this.setState({ editorState: newState });
   };
