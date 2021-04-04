@@ -19,6 +19,8 @@ import {
   constructCaret,
   constructSelection,
   createRemoveableEntity,
+  getEntitySelection,
+  getText,
   getEditorMultiInfo,
   iterateEntities,
 } from "./DraftUtil";
@@ -293,10 +295,10 @@ class TemplateEditor extends React.Component {
     const contentState = editorState.getCurrentContent();
     // while there is the chance of an asynchronous bug popping up, it seems
     // rather unlikely for a local application
-    const { entityKey, blockKey, start, end } = this.getActiveParam();
+    const { entitySelection, entityKey } = this.getActiveParam();
     const replacedContent = Modifier.replaceText(
       contentState,
-      constructSelection(blockKey, start, end),
+      entitySelection,
       "$" + replacement + " ",
       undefined,
       entityKey
@@ -314,13 +316,9 @@ class TemplateEditor extends React.Component {
    */
   getActiveParam = () => {
     const editorState = this.state.editorState;
-    const {
-      selection,
-      contentState,
-      blockKey,
-      block,
-      entityKey,
-    } = getEditorMultiInfo(editorState);
+    const { selection, block, contentState, entityKey } = getEditorMultiInfo(
+      editorState
+    );
     if (!selection.isCollapsed()) {
       return null;
     }
@@ -330,41 +328,21 @@ class TemplateEditor extends React.Component {
     if (contentState.getEntity(entityKey).getType() !== EntityType.PARAMETER) {
       return null;
     }
-    const caretPosition = selection.getAnchorOffset();
-    let activeEntityInfo = {};
-    // need to do things in this roundabout way because Draft.js doesn't appear
-    // to offer any direct way of grabbing entity span from a block
-    block.findEntityRanges(
-      (charMetadata) => {
-        return charMetadata.getEntity() === entityKey;
-      },
-      (start, end) => {
-        if (start <= caretPosition && caretPosition < end) {
-          activeEntityInfo = {
-            entityKey: entityKey,
-            blockKey: blockKey,
-            start: start,
-            end: end,
-          };
-        }
-      }
-    );
-    return activeEntityInfo;
+    return {
+      entityKey: entityKey,
+      entitySelection: getEntitySelection(block, entityKey),
+    };
   };
 
-  /**
-   * Get the text for the entity that the caret is actively positioned over.
-   */
-  getActiveEntityString = () => {
-    const activeEntity = this.getActiveParam();
-    if (activeEntity === null) {
+  /** Get the text for the param that the user is currently typing in. */
+  getActiveParamString = () => {
+    const activeParam = this.getActiveParam();
+    if (activeParam === null) {
       return null;
     }
-    const { blockKey, start, end } = activeEntity;
-    const contentState = this.state.editorState.getCurrentContent();
-    const block = contentState.getBlockForKey(blockKey);
+    const text = getText(this.state.editorState, activeParam.entitySelection);
     // start + 1 to remove leading $, end - 1 to remove magic space
-    return block.getText().substring(start + 1, end - 1);
+    return text.substring(1, text.length - 1);
   };
 
   componentDidMount() {
@@ -398,7 +376,7 @@ class TemplateEditor extends React.Component {
     // In order for that to happen, we would need it to tell us where it is.
     // Perhaps we could do this via passing in another callback function to the
     // HighlightEntity.
-    const entityString = this.getActiveEntityString();
+    const entityString = this.getActiveParamString();
     const caret = this.getCaretLocation();
     const autocomplete =
       entityString === null || caret === null ? (

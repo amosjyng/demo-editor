@@ -85,3 +85,42 @@ export function createRemoveableEntity(
     return editorState;
   }
 }
+
+/**
+ * Given a block and an entity key, returns a selection spanning that entity
+ * within the block. Assumes that the block will only have one instance of the
+ * entity. Returns null if no such entity found.
+ */
+export function getEntitySelection(block, entityKey) {
+  let entitySelection = null;
+  // need to do things in this roundabout way because Draft.js doesn't appear
+  // to offer any direct way of grabbing entity span from a block
+  block.findEntityRanges(
+    (charMetadata) => {
+      return charMetadata.getEntity() === entityKey;
+    },
+    (start, end) => {
+      entitySelection = constructSelection(block.getKey(), start, end);
+    }
+  );
+  return entitySelection;
+}
+
+/**
+ * Return the text associated with the selection inside the given block.
+ * Assumes that the selection only spans a single block.
+ */
+export function getBlockText(block, selection) {
+  return block
+    .getText()
+    .substring(selection.getAnchorOffset(), selection.getFocusOffset());
+}
+
+/**
+ * Return the text associated with the selection. Assumes that the selection
+ * only spans a single block.
+ */
+export function getText(editorState, selection) {
+  const { block } = getEditorMultiInfo(editorState, selection);
+  return getBlockText(block, selection);
+}
