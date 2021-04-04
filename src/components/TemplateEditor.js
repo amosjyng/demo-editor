@@ -3,6 +3,7 @@ import {
   CompositeDecorator,
   Editor,
   EditorState,
+  getDefaultKeyBinding,
   Modifier,
   SelectionState,
 } from "draft-js";
@@ -12,6 +13,7 @@ import HighlightEntity from "./HighlightEntity";
 
 const HIGHLIGHT_ENTITY = "HIGHLIGHT";
 const PARAM_ENTITY = "PARAM";
+const PARAM_BINDING = "template-parameterize";
 
 class TemplateEditor extends React.Component {
   constructor(props) {
@@ -32,6 +34,23 @@ class TemplateEditor extends React.Component {
       .set("focusOffset", end);
   };
 
+  templateKeyBinding = (e) => {
+    if (e.keyCode === 52 /* $ */) {
+      return PARAM_BINDING;
+    }
+
+    return getDefaultKeyBinding(e);
+  };
+
+  handleKeyCommand = (command) => {
+    if (command === PARAM_BINDING) {
+      this.parameterizeCurrentPosition();
+      return "handled";
+    } else {
+      return "not-handled";
+    }
+  };
+
   caretAt = (blockKey, position) => {
     return this.rangedSelection(blockKey, position, position);
   };
@@ -44,8 +63,7 @@ class TemplateEditor extends React.Component {
   };
 
   /** Create a new parameter in the template */
-  onParameterize = (e) => {
-    e.preventDefault();
+  parameterizeCurrentPosition = () => {
     const editorState = this.state.editorState;
     const selection = editorState.getSelection();
     const contentState = editorState.getCurrentContent();
@@ -124,6 +142,11 @@ class TemplateEditor extends React.Component {
     );
 
     this.setState({ editorState: dollarCursorEditor });
+  };
+
+  onParameterize = (e) => {
+    e.preventDefault();
+    this.parameterizeCurrentPosition();
   };
 
   createEntity = (selection, editorState, entityType) => {
@@ -299,6 +322,8 @@ class TemplateEditor extends React.Component {
         <Editor
           ref={this.editor}
           editorState={this.state.editorState}
+          handleKeyCommand={this.handleKeyCommand}
+          keyBindingFn={this.templateKeyBinding}
           onChange={this.onChange}
         />
       </div>
