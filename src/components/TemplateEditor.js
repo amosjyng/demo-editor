@@ -15,6 +15,7 @@ import Immutable from "immutable";
 import Autocomplete from "./Autocomplete";
 import EntityType from "./EntityType";
 import { Card } from "react-bootstrap";
+import { constructCaret, constructSelection } from "./DraftUtil";
 
 const PARAM_BINDING = "template-parameterize";
 
@@ -31,12 +32,6 @@ class TemplateEditor extends React.Component {
     this.editor = React.createRef();
   }
 
-  rangedSelection = (blockKey, start, end) => {
-    return SelectionState.createEmpty(blockKey)
-      .set("anchorOffset", start)
-      .set("focusOffset", end);
-  };
-
   templateKeyBinding = (e) => {
     if (e.keyCode === 52 /* $ */) {
       return PARAM_BINDING;
@@ -52,10 +47,6 @@ class TemplateEditor extends React.Component {
     } else {
       return "not-handled";
     }
-  };
-
-  caretAt = (blockKey, position) => {
-    return this.rangedSelection(blockKey, position, position);
   };
 
   /** Create a strategy to identify highlights in a block */
@@ -123,7 +114,7 @@ class TemplateEditor extends React.Component {
     //     user's arrow keys/delete button moved in. But that would remove the
     //     option for the user to append to the entity, defeating the whole
     //     point of the magic space in the first place.
-    const paramSelection = this.rangedSelection(
+    const paramSelection = constructSelection(
       selection.getStartKey(),
       selectionStart,
       selectionStart + 2
@@ -135,7 +126,7 @@ class TemplateEditor extends React.Component {
     );
 
     // move cursor to right after the $
-    const dollarCursor = this.caretAt(
+    const dollarCursor = constructCaret(
       selection.getStartKey(),
       selectionStart + 1
     );
@@ -238,7 +229,7 @@ class TemplateEditor extends React.Component {
         if (block.getText()[end - 1] !== " ") {
           return Modifier.insertText(
             currentState,
-            this.caretAt(blockKey, end),
+            constructCaret(blockKey, end),
             " ",
             undefined,
             entityKey
@@ -274,7 +265,7 @@ class TemplateEditor extends React.Component {
       });
       return EditorState.forceSelection(
         patched,
-        this.caretAt(selection.getEndKey(), selection.getEndOffset() + 1)
+        constructCaret(selection.getEndKey(), selection.getEndOffset() + 1)
       );
     }
   };
@@ -330,7 +321,7 @@ class TemplateEditor extends React.Component {
     const { entityKey, blockKey, start, end } = this.getActiveEntity();
     const replacedContent = Modifier.replaceText(
       contentState,
-      this.rangedSelection(blockKey, start, end),
+      constructSelection(blockKey, start, end),
       "$" + replacement + " ",
       undefined,
       entityKey
@@ -428,6 +419,7 @@ class TemplateEditor extends React.Component {
     // HighlightEntity.
     const entityString = this.getActiveEntityString();
     const caret = this.getCaretLocation();
+    console.log(caret);
     const autocomplete =
       entityString === null || caret === null ? (
         false
