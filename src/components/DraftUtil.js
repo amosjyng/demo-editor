@@ -29,6 +29,30 @@ export function iterateEntities(contentState, callback) {
   return contentState;
 }
 
+/**
+ * Get multiple pieces of information about the editor at once, instead of
+ * breaking it out over several lines. A custom selection may optionally be
+ * passed in, in which case block information for that selection will be
+ * returned, rather than block information for the editor's current selection.
+ */
+export function getEditorMultiInfo(editorState, customSelection) {
+  const contentState = editorState.getCurrentContent();
+  const selection =
+    customSelection === undefined
+      ? editorState.getSelection()
+      : customSelection;
+  const blockKey = selection.getAnchorKey();
+  const block = contentState.getBlockForKey(blockKey);
+  const entityKey = block.getEntityAt(selection.getAnchorOffset());
+  return {
+    contentState: contentState,
+    selection: selection,
+    blockKey: blockKey,
+    block: block,
+    entityKey: entityKey,
+  };
+}
+
 /** Create a new removeable entity in the content. */
 export function createRemoveableEntity(
   selection,
@@ -36,9 +60,10 @@ export function createRemoveableEntity(
   entityType,
   entityRemover
 ) {
-  const contentState = editorState.getCurrentContent();
-  const block = contentState.getBlockForKey(selection.getStartKey());
-  const existingEntityKey = block.getEntityAt(selection.getStartOffset());
+  const { contentState, entityKey: existingEntityKey } = getEditorMultiInfo(
+    editorState,
+    selection
+  );
   if (existingEntityKey === null) {
     // we pass the entityRemover in a roundabout way here because there
     // doesn't appear to be a straightforward way to get it directly to

@@ -19,6 +19,7 @@ import {
   constructCaret,
   constructSelection,
   createRemoveableEntity,
+  getEditorMultiInfo,
   iterateEntities,
 } from "./DraftUtil";
 
@@ -66,8 +67,7 @@ class TemplateEditor extends React.Component {
   /** Create a new parameter in the template */
   parameterizeCurrentPosition = () => {
     const editorState = this.state.editorState;
-    const selection = editorState.getSelection();
-    const contentState = editorState.getCurrentContent();
+    const { selection, contentState } = getEditorMultiInfo(editorState);
     const withDollar = Modifier.insertText(contentState, selection, "$ ");
     const editorWithDollar = EditorState.set(editorState, {
       currentContent: withDollar,
@@ -252,6 +252,7 @@ class TemplateEditor extends React.Component {
         newEditorState = this.onHighlight(newEditorState);
       }
     } else {
+      // text changed, see if any entities need to be removed
       newEditorState = EditorState.set(newEditorState, {
         currentContent: this.patchEntities(newEditorState.getCurrentContent()),
       });
@@ -292,7 +293,7 @@ class TemplateEditor extends React.Component {
     const contentState = editorState.getCurrentContent();
     // while there is the chance of an asynchronous bug popping up, it seems
     // rather unlikely for a local application
-    const { entityKey, blockKey, start, end } = this.getActiveEntity();
+    const { entityKey, blockKey, start, end } = this.getActiveParam();
     const replacedContent = Modifier.replaceText(
       contentState,
       constructSelection(blockKey, start, end),
@@ -306,24 +307,30 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newEditorState });
   };
 
-  getActiveEntity = () => {
+  /**
+   * If there exists a param that the user is actively editing, this function
+   * will return information about it. Otherwise, the function will return
+   * null.
+   */
+  getActiveParam = () => {
     const editorState = this.state.editorState;
-    const selection = editorState.getSelection();
+    const {
+      selection,
+      contentState,
+      blockKey,
+      block,
+      entityKey,
+    } = getEditorMultiInfo(editorState);
     if (!selection.isCollapsed()) {
       return null;
     }
-    const contentState = editorState.getCurrentContent();
-    const blockKey = selection.getStartKey();
-    const block = contentState.getBlockForKey(blockKey);
-    const entityKey = block.getEntityAt(selection.getStartOffset());
     if (entityKey === null) {
-      // do this check first for efficiency
       return null;
     }
     if (contentState.getEntity(entityKey).getType() !== EntityType.PARAMETER) {
       return null;
     }
-    const caretPosition = selection.getStartOffset();
+    const caretPosition = selection.getAnchorOffset();
     let activeEntityInfo = {};
     // need to do things in this roundabout way because Draft.js doesn't appear
     // to offer any direct way of grabbing entity span from a block
@@ -349,7 +356,7 @@ class TemplateEditor extends React.Component {
    * Get the text for the entity that the caret is actively positioned over.
    */
   getActiveEntityString = () => {
-    const activeEntity = this.getActiveEntity();
+    const activeEntity = this.getActiveParam();
     if (activeEntity === null) {
       return null;
     }
