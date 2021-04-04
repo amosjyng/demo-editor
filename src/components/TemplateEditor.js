@@ -88,8 +88,7 @@ class TemplateEditor extends React.Component {
     });
 
     const selectionStart = selection.getStartOffset();
-    // the paramSelection contains only the $ and a space after it
-    //
+    // ### ENTITY MAGIC ###
     // Draft.js enforces a specific mental model of how entities work:
     //
     //  1. Entities without characters do not exist. As such, we'll need to
@@ -176,6 +175,11 @@ class TemplateEditor extends React.Component {
     return range.getBoundingClientRect();
   };
 
+  /**
+   * Removes entities where only the magic space remains, as well as parameters
+   * where the dollar sign has been deleted. See "ENTITY MAGIC" for more
+   * details on the magic spacing.
+   */
   removeStrayEntities = (contentState) => {
     return iterateEntities(
       contentState,
@@ -201,9 +205,9 @@ class TemplateEditor extends React.Component {
   };
 
   /**
-   * Adds magic spacing back in to entity. Should call this function after
-   * removeStrayEntities to avoid letting the magic spacing mess with the
-   * deletion.
+   * Adds magic spacing back in to entity. See "ENTITY MAGIC" on why this space
+   * exists. Should call this function after removeStrayEntities to avoid
+   * letting the magic spacing mess with the deletion.
    */
   addMagicSpace = (contentState) => {
     return iterateEntities(
