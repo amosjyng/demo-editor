@@ -342,18 +342,35 @@ class TemplateEditor extends React.Component {
     const editorState = this.state.editorState;
     // once asynchronicity is introduced, we'll need to add a check to see if
     // the content has changed since the autocomplete was triggered
-    const { contentState, entitySelection, entityKey } = this.getActiveParam();
+    const {
+      blockKey,
+      contentState,
+      entitySelection,
+      entityKey,
+    } = this.getActiveParam();
+    const newEntityText = "$" + replacement + " ";
     const replacedContent = Modifier.replaceText(
       contentState,
       entitySelection,
-      "$" + replacement + " ",
+      newEntityText,
       undefined,
       entityKey
     );
     const newEditorState = EditorState.set(editorState, {
       currentContent: replacedContent,
     });
-    this.setState({ editorState: newEditorState });
+    const movedCaret = EditorState.forceSelection(
+      newEditorState,
+      constructCaret(
+        blockKey,
+        entitySelection.getStartOffset() + newEntityText.length
+      )
+    );
+    this.setState({ editorState: movedCaret });
+    // unsure why focus doesn't work otherwise, but this does the trick for now
+    setTimeout(() => {
+      this.editor.current.focus();
+    }, 100);
   };
 
   /**
@@ -363,9 +380,13 @@ class TemplateEditor extends React.Component {
    */
   getActiveParam = () => {
     const editorState = this.state.editorState;
-    const { selection, block, contentState, entityKey } = getEditorMultiInfo(
-      editorState
-    );
+    const {
+      selection,
+      block,
+      blockKey,
+      contentState,
+      entityKey,
+    } = getEditorMultiInfo(editorState);
     if (!selection.isCollapsed()) {
       return null;
     }
@@ -378,6 +399,7 @@ class TemplateEditor extends React.Component {
     return {
       contentState,
       entityKey,
+      blockKey,
       entitySelection: getEntitySelection(block, entityKey),
     };
   };
@@ -403,6 +425,7 @@ class TemplateEditor extends React.Component {
       this.state.editorState.getCurrentContent()
     ) {
       // focus back on the editor after an entity has just been created
+      console.log("focusing");
       this.editor.current.focus();
     }
   }
