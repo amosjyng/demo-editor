@@ -282,6 +282,10 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newEditorState });
   };
 
+  /**
+   * Remove an entity. May be triggered in various ways, e.g. by keyboard
+   * deletion or the user manually clicking the remove button.
+   */
   removeEntity = (contentState, blockKey, start, end) => {
     // assumption: user only wants to delete a highlight from one block at a
     // time, even if the highlight spans multiple blocks
@@ -295,6 +299,7 @@ class TemplateEditor extends React.Component {
     return Modifier.removeRange(removedEntity, selection, "forward");
   };
 
+  /** Callback for when the user hits the delete button on an entity */
   onRemoveEntity = (blockKey, start, end) => {
     const editorState = this.state.editorState;
     const contentState = editorState.getCurrentContent();
@@ -384,7 +389,7 @@ class TemplateEditor extends React.Component {
   }
 
   render() {
-    // Positioning the autocomplete this way using the cursor position is
+    // Positioning the autocomplete this way using the caret position is
     // rather janky. Ideally we could tie the autocomplete functionality to the
     // position of the entity itself.
     //
