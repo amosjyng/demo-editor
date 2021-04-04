@@ -10,7 +10,9 @@ form {
   margin: 10px;
 }
 
-.DraftEditor-root, .DraftEditor-root .entity, .DraftEditor-root ::placeholder {
+.DraftEditor-root,
+.DraftEditor-root .entity,
+.DraftEditor-root ::placeholder {
   font-size: 20px;
 }
 

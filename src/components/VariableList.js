@@ -8,7 +8,9 @@ class VariableList extends React.Component {
     const variableListItems = [];
     for (const variable of this.props.variables) {
       variableListItems.push(
-        <Button variant="outline-dark">{variable}</Button>
+        <Button variant="outline-dark" key={variable}>
+          {variable}
+        </Button>
       );
     }
     return (
