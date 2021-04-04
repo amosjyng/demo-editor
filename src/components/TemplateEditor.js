@@ -12,6 +12,7 @@ import "draft-js/dist/Draft.css";
 import HighlightEntity from "./HighlightEntity";
 import PropTypes from "prop-types";
 import Immutable from "immutable";
+import Autocomplete from "./Autocomplete";
 
 const HIGHLIGHT_ENTITY = "HIGHLIGHT";
 const PARAM_ENTITY = "PARAM";
@@ -312,6 +313,44 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newEditorState });
   };
 
+  /**
+   * Get the text for the entity that the caret is actively positioned over.
+   */
+  getActiveEntityString = () => {
+    const editorState = this.state.editorState;
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      return null;
+    }
+    const contentState = editorState.getCurrentContent();
+    const block = contentState.getBlockForKey(selection.getStartKey());
+    const entityKey = block.getEntityAt(selection.getStartOffset());
+    if (entityKey === null) {
+      // do this check first for efficiency
+      return null;
+    }
+    if (contentState.getEntity(entityKey).getType() !== PARAM_ENTITY) {
+      return null;
+    }
+    const caretPosition = selection.getStartOffset();
+    let matchingText = "";
+    block.findEntityRanges(
+      (charMetadata) => {
+        return charMetadata.getEntity() === entityKey;
+      },
+      (start, end) => {
+        if (start <= caretPosition && caretPosition < end) {
+          // end - 1 to remove magic space
+          matchingText = block.getText().substring(start, end - 1);
+          if (matchingText[0] === "$") {
+            matchingText = matchingText.substring(1);
+          }
+        }
+      }
+    );
+    return matchingText;
+  };
+
   componentDidMount() {
     this.editor.current.focus();
   }
@@ -326,6 +365,13 @@ class TemplateEditor extends React.Component {
   }
 
   render() {
+    const entityString = this.getActiveEntityString();
+    const autocomplete =
+      entityString === null ? (
+        false
+      ) : (
+        <Autocomplete match={entityString} variables={this.props.variables} />
+      );
     return (
       <div className="TemplateEditor">
         <Toolbar onParameterize={this.onParameterize} />
@@ -336,6 +382,7 @@ class TemplateEditor extends React.Component {
           keyBindingFn={this.templateKeyBinding}
           onChange={this.onChange}
         />
+        {autocomplete}
       </div>
     );
   }
