@@ -15,7 +15,11 @@ import Immutable from "immutable";
 import Autocomplete from "./Autocomplete";
 import EntityType from "./EntityType";
 import { Card } from "react-bootstrap";
-import { constructCaret, constructSelection } from "./DraftUtil";
+import {
+  constructCaret,
+  constructSelection,
+  iterateEntities,
+} from "./DraftUtil";
 
 const PARAM_BINDING = "template-parameterize";
 
@@ -32,6 +36,7 @@ class TemplateEditor extends React.Component {
     this.editor = React.createRef();
   }
 
+  /** Send off a custom command if the user enters a $ */
   templateKeyBinding = (e) => {
     if (e.keyCode === 52 /* $ */) {
       return PARAM_BINDING;
@@ -40,6 +45,7 @@ class TemplateEditor extends React.Component {
     return getDefaultKeyBinding(e);
   };
 
+  /** Handle custom keystroke commands from the user */
   handleKeyCommand = (command) => {
     if (command === PARAM_BINDING) {
       this.parameterizeCurrentPosition();
@@ -49,7 +55,7 @@ class TemplateEditor extends React.Component {
     }
   };
 
-  /** Create a strategy to identify highlights in a block */
+  /** Identify entities in a block */
   highlightStrategy = (block, callback) => {
     block.findEntityRanges((charMetadata) => {
       return charMetadata.getEntity() !== null;
@@ -138,6 +144,7 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: dollarCursorEditor });
   };
 
+  /** Callback for parameter creation via the UI, as opposed to a keystroke. */
   onParameterize = (e) => {
     e.preventDefault();
     this.parameterizeCurrentPosition();
@@ -169,6 +176,7 @@ class TemplateEditor extends React.Component {
     }
   };
 
+  /** Get the current location of the caret within the input field */
   getCaretLocation = () => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) {
@@ -178,22 +186,8 @@ class TemplateEditor extends React.Component {
     return range.getBoundingClientRect();
   };
 
-  iterateEntities = (contentState, callback) => {
-    for (let [blockKey, block] of contentState.getBlockMap()) {
-      block.findEntityRanges(
-        (charMetadata) => {
-          return charMetadata.getEntity() !== null;
-        },
-        (start, end) => {
-          contentState = callback(contentState, blockKey, block, start, end);
-        }
-      );
-    }
-    return contentState;
-  };
-
   removeStrayEntities = (contentState) => {
-    return this.iterateEntities(
+    return iterateEntities(
       contentState,
       (currentState, blockKey, block, start, end) => {
         if (start + 1 === end && block.getText()[start] === " ") {
@@ -222,7 +216,7 @@ class TemplateEditor extends React.Component {
    * deletion.
    */
   addMagicSpace = (contentState) => {
-    return this.iterateEntities(
+    return iterateEntities(
       contentState,
       (currentState, blockKey, block, start, end) => {
         const entityKey = block.getEntityAt(start);
@@ -241,6 +235,7 @@ class TemplateEditor extends React.Component {
     );
   };
 
+  /** Do all post-hoc processing of entities after the latest content edit. */
   patchEntities = (contentState) => {
     const straysRemoved = this.removeStrayEntities(contentState);
     const magicSpaceAdded = this.addMagicSpace(straysRemoved);
@@ -250,39 +245,41 @@ class TemplateEditor extends React.Component {
   /** Create a new highlight in the template */
   onHighlight = (editorState) => {
     const selection = editorState.getSelection();
-    if (selection.isCollapsed()) {
-      return editorState;
-    } else {
-      const highlightedEntity = this.createEntity(
-        selection,
-        editorState,
-        EntityType.HIGHLIGHT
-      );
-      const patched = EditorState.set(highlightedEntity, {
-        currentContent: this.patchEntities(
-          highlightedEntity.getCurrentContent()
-        ),
-      });
-      return EditorState.forceSelection(
-        patched,
-        constructCaret(selection.getEndKey(), selection.getEndOffset() + 1)
-      );
-    }
+    const highlightedEntity = this.createEntity(
+      selection,
+      editorState,
+      EntityType.HIGHLIGHT
+    );
+    const patched = EditorState.set(highlightedEntity, {
+      currentContent: this.patchEntities(highlightedEntity.getCurrentContent()),
+    });
+    return EditorState.forceSelection(
+      patched,
+      // remove the highlight after we created an entity for it -- and allow
+      // the user to continue typing immediately after the highlight
+      constructCaret(selection.getEndKey(), selection.getEndOffset() + 1)
+    );
   };
 
-  onChange = (newState) => {
+  /**
+   * Handle changes to the editor. Changes can either be to the editor content,
+   * or to the text selected inside the editor.
+   */
+  onChange = (newEditorState) => {
     if (
-      newState.getCurrentContent() ===
+      newEditorState.getCurrentContent() ===
       this.state.editorState.getCurrentContent()
     ) {
       // none of the text changed, must be a selection change
-      newState = this.onHighlight(newState);
+      if (!newEditorState.getSelection().isCollapsed()) {
+        newEditorState = this.onHighlight(newEditorState);
+      }
     } else {
-      newState = EditorState.set(newState, {
-        currentContent: this.patchEntities(newState.getCurrentContent()),
+      newEditorState = EditorState.set(newEditorState, {
+        currentContent: this.patchEntities(newEditorState.getCurrentContent()),
       });
     }
-    this.setState({ editorState: newState });
+    this.setState({ editorState: newEditorState });
   };
 
   removeEntity = (contentState, blockKey, start, end) => {
@@ -419,7 +416,6 @@ class TemplateEditor extends React.Component {
     // HighlightEntity.
     const entityString = this.getActiveEntityString();
     const caret = this.getCaretLocation();
-    console.log(caret);
     const autocomplete =
       entityString === null || caret === null ? (
         false

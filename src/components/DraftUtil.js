@@ -13,3 +13,18 @@ export function constructSelection(blockKey, start, end) {
 export function constructCaret(blockKey, position) {
   return constructSelection(blockKey, position, position);
 }
+
+/** Iterate through all entities in the content. */
+export function iterateEntities(contentState, callback) {
+  for (let [blockKey, block] of contentState.getBlockMap()) {
+    block.findEntityRanges(
+      (charMetadata) => {
+        return charMetadata.getEntity() !== null;
+      },
+      (start, end) => {
+        contentState = callback(contentState, blockKey, block, start, end);
+      }
+    );
+  }
+  return contentState;
+}
