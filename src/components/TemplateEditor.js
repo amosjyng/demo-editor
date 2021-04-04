@@ -178,6 +178,15 @@ class TemplateEditor extends React.Component {
     }
   };
 
+  getCaretLocation = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) {
+      return null;
+    }
+    const range = selection.getRangeAt(0);
+    return range.getBoundingClientRect();
+  };
+
   iterateEntities = (contentState, callback) => {
     for (let [blockKey, block] of contentState.getBlockMap()) {
       block.findEntityRanges(
@@ -395,20 +404,40 @@ class TemplateEditor extends React.Component {
       prevState.editorState.getCurrentContent() !=
       this.state.editorState.getCurrentContent()
     ) {
+      // focus back on the editor after an entity has just been created
       this.editor.current.focus();
     }
   }
 
   render() {
+    // Positioning the autocomplete this way using the cursor position is
+    // rather janky. Ideally we could tie the autocomplete functionality to the
+    // position of the entity itself.
+    //
+    // One solution would be to render the autocomplete div as part of
+    // HighlightEntity rendering. This doesn't work too well because a cursor
+    // change does not cause the HighlightEntity to be rerendered, and so the
+    // rendered autocomplete div stays up forever until the content is changed.
+    // Which makes sense as an assumption by Draft.js -- why would the content
+    // blocks need to rerender if the content state didn't change?
+    //
+    // Another solution would be to grab the position of the button that has
+    // been rendered by the HighlightEntity corresponding to the active entity.
+    // In order for that to happen, we would need it to tell us where it is.
+    // Perhaps we could do this via passing in another callback function to the
+    // HighlightEntity.
     const entityString = this.getActiveEntityString();
+    const caret = this.getCaretLocation();
     const autocomplete =
-      entityString === null ? (
+      entityString === null || caret === null ? (
         false
       ) : (
         <Autocomplete
           match={entityString}
           variables={this.props.variables}
           onReplaceEntity={this.onReplaceEntity}
+          x={caret.x}
+          y={caret.y}
         />
       );
     return (
