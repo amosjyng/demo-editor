@@ -8,19 +8,15 @@ import {
 } from "draft-js";
 import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
-import ParameterEntity from "./ParameterEntity";
 import HighlightEntity from "./HighlightEntity";
 
 const HIGHLIGHT_ENTITY = "HIGHLIGHT";
+const PARAM_ENTITY = "PARAM";
 
 class TemplateEditor extends React.Component {
   constructor(props) {
     super(props);
     const decorator = new CompositeDecorator([
-      {
-        strategy: this.parameterStrategy,
-        component: ParameterEntity,
-      },
       {
         strategy: this.highlightStrategy,
         component: HighlightEntity,
@@ -29,17 +25,6 @@ class TemplateEditor extends React.Component {
     this.state = { editorState: EditorState.createEmpty(decorator) };
     this.editor = React.createRef();
   }
-
-  /** Create a strategy to identify parameters in a block */
-  parameterStrategy = (block, callback) => {
-    const PARAMETER_REGEX = /\$[^ ]*/g;
-    const text = block.getText();
-    let parameterMatch, start;
-    while ((parameterMatch = PARAMETER_REGEX.exec(text)) !== null) {
-      start = parameterMatch.index;
-      callback(start, start + parameterMatch[0].length);
-    }
-  };
 
   /** Create a strategy to identify highlights in a block */
   highlightStrategy = (block, callback) => {
@@ -54,15 +39,23 @@ class TemplateEditor extends React.Component {
     const editorState = this.state.editorState;
     const selection = editorState.getSelection();
     const contentState = editorState.getCurrentContent();
-    const withNewParameter = Modifier.insertText(contentState, selection, "$");
-
-    this.setState({
-      editorState: EditorState.push(
-        editorState,
-        withNewParameter,
-        "withNewDollar"
-      ),
+    const withDollar = Modifier.insertText(contentState, selection, "$");
+    const editorWithDollar = EditorState.set(editorState, {
+      currentContent: withDollar,
     });
+
+    const initSelection = SelectionState.createEmpty(selection.getStartKey());
+    const selectionStart = selection.getStartOffset();
+    // the paramSelection contains only the $
+    const paramSelection = initSelection
+      .set("anchorOffset", selectionStart)
+      .set("focusOffset", selectionStart + 1);
+    const newEditorState = this.createEntity(
+      paramSelection,
+      editorWithDollar,
+      PARAM_ENTITY
+    );
+    this.setState({ editorState: newEditorState });
   };
 
   createEntity = (selection, editorState, entityType) => {
