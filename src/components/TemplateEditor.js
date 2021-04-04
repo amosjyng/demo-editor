@@ -425,7 +425,6 @@ class TemplateEditor extends React.Component {
       this.state.editorState.getCurrentContent()
     ) {
       // focus back on the editor after an entity has just been created
-      console.log("focusing");
       this.editor.current.focus();
     }
   }
@@ -449,16 +448,18 @@ class TemplateEditor extends React.Component {
     // HighlightEntity.
     const entityString = this.getActiveParamString();
     const caret = this.getCaretLocation();
+    const x = caret === null ? 0 : caret.x;
+    const y = caret === null ? 0 : caret.y;
     const autocomplete =
-      entityString === null || caret === null ? (
+      entityString === null ? (
         false
       ) : (
         <Autocomplete
           match={entityString}
           variables={this.props.variables}
           onReplaceEntity={this.onReplaceParam}
-          x={caret.x}
-          y={caret.y}
+          x={x}
+          y={y}
         />
       );
     return (
