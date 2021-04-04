@@ -11,7 +11,6 @@ class HighlightEntity extends React.Component {
     const contentState = props.contentState;
     const { entityRemover } = contentState.getEntity(entityKey).getData();
     this.entityRemover = entityRemover;
-    this.entityType = contentState.getEntity(entityKey).getType();
   }
 
   removeEntity = () => {
@@ -20,9 +19,15 @@ class HighlightEntity extends React.Component {
 
   render() {
     let variant = "secondary"; // for unknown future variants
-    if (this.entityType === EntityType.PARAMETER) {
+    // can't create this in constructor because this DOM node gets reused, and
+    // so the color will end up being the wrong cached color if a preceding
+    // entity gets deleted, and that entity's DOM node is used for this one
+    const entityType = this.props.contentState
+      .getEntity(this.props.entityKey)
+      .getType();
+    if (entityType === EntityType.PARAMETER) {
       variant = "primary"; // blue
-    } else if (this.entityType === EntityType.HIGHLIGHT) {
+    } else if (entityType === EntityType.HIGHLIGHT) {
       variant = "danger"; //red
     }
     return (
