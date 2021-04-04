@@ -26,7 +26,7 @@ class HighlightEntity extends React.Component {
       variant = "danger"; //red
     }
     return (
-      <Button as="span" variant={variant} className="HighlightEntity">
+      <Button as="span" variant={variant} className="entity">
         {this.props.children}
         <span onClick={this.removeEntity}>X</span>
       </Button>

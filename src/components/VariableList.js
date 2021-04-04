@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import Immutable from "immutable";
-import { Button, Form } from "react-bootstrap";
+import { Button, Card, Form, Col } from "react-bootstrap";
 
 class VariableList extends React.Component {
   render() {
@@ -12,17 +12,29 @@ class VariableList extends React.Component {
       );
     }
     return (
-      <div id="variable-list">
-        <Form.Control
-          placeholder="Enter a new variable name"
-          onChange={this.props.updateNewVariable}
-          value={this.props.newVariable}
-        />
-        <Button variant="outline-primary" onClick={this.props.addVariable}>
-          Add variable
-        </Button>
-        <div>{variableListItems}</div>
-      </div>
+      <Card body>
+        <Card.Title>Known variables</Card.Title>
+        <Form>
+          <Form.Row>
+            <Col>
+              <Form.Control
+                placeholder="Enter a new variable name"
+                onChange={this.props.updateNewVariable}
+                value={this.props.newVariable}
+              />
+            </Col>
+            <Col xs="auto">
+              <Button
+                variant="outline-primary"
+                onClick={this.props.addVariable}
+              >
+                Add variable
+              </Button>
+            </Col>
+          </Form.Row>
+        </Form>
+        <div className="variable-list">{variableListItems}</div>
+      </Card>
     );
   }
 }

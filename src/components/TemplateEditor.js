@@ -14,6 +14,7 @@ import PropTypes from "prop-types";
 import Immutable from "immutable";
 import Autocomplete from "./Autocomplete";
 import EntityType from "./EntityType";
+import { Card } from "react-bootstrap";
 
 const PARAM_BINDING = "template-parameterize";
 
@@ -411,7 +412,7 @@ class TemplateEditor extends React.Component {
         />
       );
     return (
-      <div className="TemplateEditor">
+      <Card body>
         <Toolbar onParameterize={this.onParameterize} />
         <Editor
           ref={this.editor}
@@ -419,9 +420,10 @@ class TemplateEditor extends React.Component {
           handleKeyCommand={this.handleKeyCommand}
           keyBindingFn={this.templateKeyBinding}
           onChange={this.onChange}
+          placeholder="Start typing here..."
         />
         {autocomplete}
-      </div>
+      </Card>
     );
   }
 }
