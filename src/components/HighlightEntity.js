@@ -1,22 +1,35 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { ContentState } from "draft-js";
+import EntityType from "./EntityType";
+import { Button } from "react-bootstrap";
 
 class HighlightEntity extends React.Component {
+  constructor(props) {
+    super(props);
+    const entityKey = props.entityKey;
+    const contentState = props.contentState;
+    const { entityRemover } = contentState.getEntity(entityKey).getData();
+    this.entityRemover = entityRemover;
+    this.entityType = contentState.getEntity(entityKey).getType();
+  }
+
   removeEntity = () => {
-    const entityKey = this.props.entityKey;
-    const { entityRemover } = this.props.contentState
-      .getEntity(entityKey)
-      .getData();
-    entityRemover(this.props.blockKey, this.props.start, this.props.end);
+    this.entityRemover(this.props.blockKey, this.props.start, this.props.end);
   };
 
   render() {
+    let variant = "secondary"; // for unknown future variants
+    if (this.entityType === EntityType.PARAMETER) {
+      variant = "primary"; // blue
+    } else if (this.entityType === EntityType.HIGHLIGHT) {
+      variant = "danger"; //red
+    }
     return (
-      <span className="HighlightEntity">
-        <em>{this.props.children}</em>
-        <button onClick={this.removeEntity}>X</button>
-      </span>
+      <Button as="span" variant={variant} className="HighlightEntity">
+        {this.props.children}
+        <span onClick={this.removeEntity}>X</span>
+      </Button>
     );
   }
 }

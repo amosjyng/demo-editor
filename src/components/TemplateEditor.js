@@ -13,9 +13,8 @@ import HighlightEntity from "./HighlightEntity";
 import PropTypes from "prop-types";
 import Immutable from "immutable";
 import Autocomplete from "./Autocomplete";
+import EntityType from "./EntityType";
 
-const HIGHLIGHT_ENTITY = "HIGHLIGHT";
-const PARAM_ENTITY = "PARAM";
 const PARAM_BINDING = "template-parameterize";
 
 class TemplateEditor extends React.Component {
@@ -131,7 +130,7 @@ class TemplateEditor extends React.Component {
     const newEditorState = this.createEntity(
       paramSelection,
       editorWithDollar,
-      PARAM_ENTITY
+      EntityType.PARAMETER
     );
 
     // move cursor to right after the $
@@ -202,7 +201,7 @@ class TemplateEditor extends React.Component {
           const entityKey = block.getEntityAt(start);
           const entity = currentState.getEntity(entityKey);
           if (
-            entity.getType() === PARAM_ENTITY &&
+            entity.getType() === EntityType.PARAMETER &&
             block.getText()[start] !== "$"
           ) {
             // if user just deleted the dollar sign in a param entity for any
@@ -256,7 +255,7 @@ class TemplateEditor extends React.Component {
       const highlightedEntity = this.createEntity(
         selection,
         editorState,
-        HIGHLIGHT_ENTITY
+        EntityType.HIGHLIGHT
       );
       const patched = EditorState.set(highlightedEntity, {
         currentContent: this.patchEntities(
@@ -346,7 +345,7 @@ class TemplateEditor extends React.Component {
       // do this check first for efficiency
       return null;
     }
-    if (contentState.getEntity(entityKey).getType() !== PARAM_ENTITY) {
+    if (contentState.getEntity(entityKey).getType() !== EntityType.PARAMETER) {
       return null;
     }
     const caretPosition = selection.getStartOffset();

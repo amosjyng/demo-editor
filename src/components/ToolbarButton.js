@@ -1,10 +1,13 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { Button } from "react-bootstrap";
 
 class ToolbarButton extends React.Component {
   render() {
     return (
-      <button onClick={this.props.onParameterize}>{this.props.symbol}</button>
+      <Button variant="light" onClick={this.props.onParameterize}>
+        {this.props.symbol}
+      </Button>
     );
   }
 }
