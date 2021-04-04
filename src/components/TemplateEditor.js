@@ -107,46 +107,23 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newState });
   };
 
-  onRemoveEntity = (entityKey) => {
+  onRemoveEntity = (blockKey, start, end) => {
     const editorState = this.state.editorState;
     const contentState = editorState.getCurrentContent();
-    // It appears there's no way to retrieve the span of an entity directly
-    // from the content state. We could store the span in the entity's data,
-    // but then we would expose ourselves to bugs where the stored span goes
-    // out of sync with the current span. For greater simplicity, we will do a
-    // full search for this entity across all blocks.
-    //
-    // This could present a problem if the template is really long, in which
-    // case we should consider storing the span, modifying Draft.js (though
-    // the chances of a patch being accepted are likely low), or perhaps even
-    // using a different rich text editor.
-    let removedContent = contentState;
-    for (const block of contentState.getBlocksAsArray()) {
-      block.findEntityRanges(
-        (charMetadata) => {
-          return charMetadata.getEntity() === entityKey;
-        },
-        (start, end) => {
-          const initSelection = SelectionState.createEmpty(block.getKey());
-          const selection = initSelection
-            .set("anchorOffset", start)
-            .set("focusOffset", end);
-          // apparently this is the official way to remove entities
-          // see https://github.com/facebook/draft-js/issues/182
-          const removedEntity = Modifier.applyEntity(
-            removedContent,
-            selection,
-            null
-          );
-          removedContent = Modifier.removeRange(
-            removedEntity,
-            selection,
-            "forward"
-          );
-          // can't exit early because an entity might span multiple blocks
-        }
-      );
-    }
+    // assumption: user only wants to delete a highlight from one block at a
+    // time, even if the highlight spans multiple blocks
+    const initSelection = SelectionState.createEmpty(blockKey);
+    const selection = initSelection
+      .set("anchorOffset", start)
+      .set("focusOffset", end);
+    // apparently this is the official way to remove entities
+    // see https://github.com/facebook/draft-js/issues/182
+    const removedEntity = Modifier.applyEntity(contentState, selection, null);
+    const removedContent = Modifier.removeRange(
+      removedEntity,
+      selection,
+      "forward"
+    );
     const newEditorState = EditorState.set(editorState, {
       currentContent: removedContent,
     });
