@@ -147,6 +147,7 @@ class TemplateEditor extends React.Component {
       return newEditorState;
     } else {
       console.log("Highlight already exists at location, not recreating.");
+      return editorState;
     }
   };
 
