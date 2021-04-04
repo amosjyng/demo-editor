@@ -236,7 +236,10 @@ class TemplateEditor extends React.Component {
           highlightedEntity.getCurrentContent()
         ),
       });
-      return patched;
+      return EditorState.forceSelection(
+        patched,
+        this.caretAt(selection.getEndKey(), selection.getEndOffset() + 1)
+      );
     }
   };
 
