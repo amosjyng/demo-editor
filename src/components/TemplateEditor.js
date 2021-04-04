@@ -313,17 +313,34 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newEditorState });
   };
 
-  /**
-   * Get the text for the entity that the caret is actively positioned over.
-   */
-  getActiveEntityString = () => {
+  onReplaceEntity = (replacement) => {
+    const editorState = this.state.editorState;
+    const contentState = editorState.getCurrentContent();
+    // while there is the chance of an asynchronous bug popping up, it seems
+    // rather unlikely for a local application
+    const { entityKey, blockKey, start, end } = this.getActiveEntity();
+    const replacedContent = Modifier.replaceText(
+      contentState,
+      this.rangedSelection(blockKey, start, end),
+      "$" + replacement + " ",
+      undefined,
+      entityKey
+    );
+    const newEditorState = EditorState.set(editorState, {
+      currentContent: replacedContent,
+    });
+    this.setState({ editorState: newEditorState });
+  };
+
+  getActiveEntity = () => {
     const editorState = this.state.editorState;
     const selection = editorState.getSelection();
     if (!selection.isCollapsed()) {
       return null;
     }
     const contentState = editorState.getCurrentContent();
-    const block = contentState.getBlockForKey(selection.getStartKey());
+    const blockKey = selection.getStartKey();
+    const block = contentState.getBlockForKey(blockKey);
     const entityKey = block.getEntityAt(selection.getStartOffset());
     if (entityKey === null) {
       // do this check first for efficiency
@@ -333,22 +350,40 @@ class TemplateEditor extends React.Component {
       return null;
     }
     const caretPosition = selection.getStartOffset();
-    let matchingText = "";
+    let activeEntityInfo = {};
+    // need to do things in this roundabout way because Draft.js doesn't appear
+    // to offer any direct way of grabbing entity span from a block
     block.findEntityRanges(
       (charMetadata) => {
         return charMetadata.getEntity() === entityKey;
       },
       (start, end) => {
         if (start <= caretPosition && caretPosition < end) {
-          // end - 1 to remove magic space
-          matchingText = block.getText().substring(start, end - 1);
-          if (matchingText[0] === "$") {
-            matchingText = matchingText.substring(1);
-          }
+          activeEntityInfo = {
+            entityKey: entityKey,
+            blockKey: blockKey,
+            start: start,
+            end: end,
+          };
         }
       }
     );
-    return matchingText;
+    return activeEntityInfo;
+  };
+
+  /**
+   * Get the text for the entity that the caret is actively positioned over.
+   */
+  getActiveEntityString = () => {
+    const activeEntity = this.getActiveEntity();
+    if (activeEntity === null) {
+      return null;
+    }
+    const { blockKey, start, end } = activeEntity;
+    const contentState = this.state.editorState.getCurrentContent();
+    const block = contentState.getBlockForKey(blockKey);
+    // start + 1 to remove leading $, end - 1 to remove magic space
+    return block.getText().substring(start + 1, end - 1);
   };
 
   componentDidMount() {
@@ -370,7 +405,11 @@ class TemplateEditor extends React.Component {
       entityString === null ? (
         false
       ) : (
-        <Autocomplete match={entityString} variables={this.props.variables} />
+        <Autocomplete
+          match={entityString}
+          variables={this.props.variables}
+          onReplaceEntity={this.onReplaceEntity}
+        />
       );
     return (
       <div className="TemplateEditor">

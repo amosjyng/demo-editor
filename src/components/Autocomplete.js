@@ -9,7 +9,10 @@ class Autocomplete extends React.Component {
     for (const variable of this.props.variables) {
       if (variable.includes(this.props.match)) {
         variableListItems.push(
-          <li key={variable}>
+          <li
+            key={variable}
+            onClick={() => this.props.onReplaceEntity(variable)}
+          >
             <Highlighter
               searchWords={[this.props.match]}
               textToHighlight={variable}
@@ -29,6 +32,7 @@ class Autocomplete extends React.Component {
 Autocomplete.propTypes = {
   variables: PropTypes.instanceOf(Immutable.Iterable),
   match: PropTypes.string.isRequired,
+  onReplaceEntity: PropTypes.func.isRequired,
 };
 
 export default Autocomplete;
