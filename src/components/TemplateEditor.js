@@ -326,8 +326,8 @@ class TemplateEditor extends React.Component {
    */
   onReplaceParam = (replacement) => {
     const editorState = this.state.editorState;
-    // while there is the chance of an asynchronous bug popping up, it seems
-    // rather unlikely for a local application
+    // once asynchronicity is introduced, we'll need to add a check to see if
+    // the content has changed since the autocomplete was triggered
     const { contentState, entitySelection, entityKey } = this.getActiveParam();
     const replacedContent = Modifier.replaceText(
       contentState,
