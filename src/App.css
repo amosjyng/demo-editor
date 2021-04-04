@@ -16,6 +16,10 @@ form {
   font-size: 20px;
 }
 
+.DraftEditor-root .btn {
+  margin-left: 5px;
+}
+
 .btn-toolbar {
   margin-bottom: 10px;
 }
