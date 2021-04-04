@@ -154,6 +154,9 @@ class TemplateEditor extends React.Component {
     const block = contentState.getBlockForKey(selection.getStartKey());
     const existingEntityKey = block.getEntityAt(selection.getStartOffset());
     if (existingEntityKey === null) {
+      // we pass the entityRemover in a roundabout way here because there
+      // doesn't appear to be a straightforward way to get it directly to
+      // HighlightEntity via props
       const withEntity = contentState.createEntity(entityType, "MUTABLE", {
         entityRemover: this.onRemoveEntity,
       });
