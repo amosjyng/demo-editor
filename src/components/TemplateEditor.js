@@ -39,23 +39,36 @@ class TemplateEditor extends React.Component {
     const editorState = this.state.editorState;
     const selection = editorState.getSelection();
     const contentState = editorState.getCurrentContent();
-    const withDollar = Modifier.insertText(contentState, selection, "$");
+    const withDollar = Modifier.insertText(contentState, selection, "$ ");
     const editorWithDollar = EditorState.set(editorState, {
       currentContent: withDollar,
     });
 
     const initSelection = SelectionState.createEmpty(selection.getStartKey());
     const selectionStart = selection.getStartOffset();
-    // the paramSelection contains only the $
+    // the paramSelection contains only the $ and a space after it
+    // There is a space so that we can continue appending to a single-character
+    // entity. This is a workaround given the constraints imposed by Draft.js'
+    // mental model of how things work.
     const paramSelection = initSelection
       .set("anchorOffset", selectionStart)
-      .set("focusOffset", selectionStart + 1);
+      .set("focusOffset", selectionStart + 2);
     const newEditorState = this.createEntity(
       paramSelection,
       editorWithDollar,
       PARAM_ENTITY
     );
-    this.setState({ editorState: newEditorState });
+
+    // move cursor to right after the $
+    const dollarCursor = initSelection
+      .set("anchorOffset", selectionStart + 1)
+      .set("focusOffset", selectionStart + 1);
+    const dollarCursorEditor = EditorState.forceSelection(
+      newEditorState,
+      dollarCursor
+    );
+
+    this.setState({ editorState: dollarCursorEditor });
   };
 
   createEntity = (selection, editorState, entityType) => {
