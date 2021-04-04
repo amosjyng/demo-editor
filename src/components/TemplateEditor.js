@@ -10,6 +10,8 @@ import {
 import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 import HighlightEntity from "./HighlightEntity";
+import PropTypes from "prop-types";
+import Immutable from "immutable";
 
 const HIGHLIGHT_ENTITY = "HIGHLIGHT";
 const PARAM_ENTITY = "PARAM";
@@ -338,5 +340,9 @@ class TemplateEditor extends React.Component {
     );
   }
 }
+
+TemplateEditor.propTypes = {
+  variables: PropTypes.instanceOf(Immutable.Iterable),
+};
 
 export default TemplateEditor;

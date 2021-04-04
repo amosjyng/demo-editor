@@ -34,7 +34,7 @@ class TemplateDesigner extends React.Component {
           updateNewVariable={this.updateNewVariable}
           addVariable={this.addVariable}
         />
-        <TemplateEditor />
+        <TemplateEditor variables={this.state.variables} />
       </div>
     );
   }
