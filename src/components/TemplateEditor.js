@@ -65,33 +65,35 @@ class TemplateEditor extends React.Component {
     });
   };
 
+  createEntity = (selection, editorState, entityType) => {
+    const contentState = editorState.getCurrentContent();
+    const block = contentState.getBlockForKey(selection.getStartKey());
+    const existingEntityKey = block.getEntityAt(selection.getStartOffset());
+    if (existingEntityKey === null) {
+      const withEntity = contentState.createEntity(entityType, "MUTABLE", {
+        entityRemover: this.onRemoveEntity,
+      });
+      const entityKey = withEntity.getLastCreatedEntityKey();
+      console.log("New highlight " + entityKey);
+      const withHighlight = Modifier.applyEntity(
+        withEntity,
+        selection,
+        entityKey
+      );
+      const newEditorState = EditorState.set(editorState, {
+        currentContent: withHighlight,
+      });
+      return newEditorState;
+    } else {
+      console.log("Highlight already exists at location, not recreating.");
+    }
+  };
+
   /** Create a new highlight in the template */
   onHighlight = (editorState) => {
     const selection = editorState.getSelection();
     if (!selection.isCollapsed()) {
-      const contentState = editorState.getCurrentContent();
-      const block = contentState.getBlockForKey(selection.getStartKey());
-      const existingEntityKey = block.getEntityAt(selection.getStartOffset());
-      if (existingEntityKey === null) {
-        const withEntity = contentState.createEntity(
-          HIGHLIGHT_ENTITY,
-          "MUTABLE",
-          { entityRemover: this.onRemoveEntity }
-        );
-        const entityKey = withEntity.getLastCreatedEntityKey();
-        console.log("New highlight " + entityKey);
-        const withHighlight = Modifier.applyEntity(
-          withEntity,
-          selection,
-          entityKey
-        );
-        const newEditorState = EditorState.set(editorState, {
-          currentContent: withHighlight,
-        });
-        return newEditorState;
-      } else {
-        console.log("Highlight already exists at location, not recreating.");
-      }
+      return this.createEntity(selection, editorState, HIGHLIGHT_ENTITY);
     }
     return editorState;
   };
