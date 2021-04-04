@@ -78,16 +78,7 @@ class TemplateEditor extends React.Component {
       selection.getStartKey(),
       selection.getStartOffset()
     );
-    const withDollar = Modifier.insertText(
-      contentState,
-      collapsedSelection,
-      "$ "
-    );
-    const editorWithDollar = EditorState.set(editorState, {
-      currentContent: withDollar,
-    });
 
-    const selectionStart = selection.getStartOffset();
     // ### ENTITY MAGIC ###
     // Draft.js enforces a specific mental model of how entities work:
     //
@@ -134,6 +125,16 @@ class TemplateEditor extends React.Component {
     //     user's arrow keys/delete button moved in. But that would remove the
     //     option for the user to append to the entity, defeating the whole
     //     point of the magic space in the first place.
+    const withDollar = Modifier.insertText(
+      contentState,
+      collapsedSelection,
+      "$ "
+    );
+    const editorWithDollar = EditorState.set(editorState, {
+      currentContent: withDollar,
+    });
+
+    const selectionStart = selection.getStartOffset();
     const paramSelection = constructSelection(
       selection.getStartKey(),
       selectionStart,
