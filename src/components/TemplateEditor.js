@@ -259,10 +259,12 @@ class TemplateEditor extends React.Component {
 
   /** See if a selection is eligible to be turned into a highlighted entity. */
   isValidHighlight = (selection) => {
-    !selection.isCollapsed() &&
+    return (
+      !selection.isCollapsed() &&
       // make sure selected text is not empty -- otherwise, we'll end up
       // deleting selected single spaces due to the post-processing cleanup
-      getText(this.state.editorState, selection).trim().length > 0;
+      getText(this.state.editorState, selection).trim().length > 0
+    );
   };
 
   /**
