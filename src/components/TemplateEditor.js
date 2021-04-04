@@ -135,7 +135,6 @@ class TemplateEditor extends React.Component {
         entityRemover: this.onRemoveEntity,
       });
       const entityKey = withEntity.getLastCreatedEntityKey();
-      console.log("New highlight " + entityKey);
       const withHighlight = Modifier.applyEntity(
         withEntity,
         selection,
@@ -146,7 +145,6 @@ class TemplateEditor extends React.Component {
       });
       return newEditorState;
     } else {
-      console.log("Highlight already exists at location, not recreating.");
       return editorState;
     }
   };
