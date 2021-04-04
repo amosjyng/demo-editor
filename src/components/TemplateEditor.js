@@ -70,7 +70,19 @@ class TemplateEditor extends React.Component {
   parameterizeCurrentPosition = () => {
     const editorState = this.state.editorState;
     const { selection, contentState } = getEditorMultiInfo(editorState);
-    const withDollar = Modifier.insertText(contentState, selection, "$ ");
+    // Draft.js expects insertions to occur at collapsed selections, so make
+    // sure to collapse it first before doing so. In the future, if there
+    // exists such a selection, we may actually want to convert the whole
+    // selection into a parameter entity.
+    const collapsedSelection = constructCaret(
+      selection.getStartKey(),
+      selection.getStartOffset()
+    );
+    const withDollar = Modifier.insertText(
+      contentState,
+      collapsedSelection,
+      "$ "
+    );
     const editorWithDollar = EditorState.set(editorState, {
       currentContent: withDollar,
     });
@@ -240,6 +252,14 @@ class TemplateEditor extends React.Component {
     );
   };
 
+  /** See if a selection is eligible to be turned into a highlighted entity. */
+  isValidHighlight = (selection) => {
+    !selection.isCollapsed() &&
+      // make sure selected text is not empty -- otherwise, we'll end up
+      // deleting selected single spaces due to the post-processing cleanup
+      getText(this.state.editorState, selection).trim().length > 0;
+  };
+
   /**
    * Handle changes to the editor. Changes can either be to the editor content,
    * or to the text selected inside the editor.
@@ -250,7 +270,7 @@ class TemplateEditor extends React.Component {
       this.state.editorState.getCurrentContent()
     ) {
       // none of the text changed, must be a selection change
-      if (!newEditorState.getSelection().isCollapsed()) {
+      if (this.isValidHighlight(newEditorState.getSelection())) {
         newEditorState = this.onHighlight(newEditorState);
       }
     } else {
