@@ -316,9 +316,8 @@ class TemplateEditor extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (
-      prevProps != this.props ||
       prevState.editorState.getCurrentContent() !=
-        this.state.editorState.getCurrentContent()
+      this.state.editorState.getCurrentContent()
     ) {
       this.editor.current.focus();
     }

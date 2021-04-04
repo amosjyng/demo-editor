@@ -1,14 +1,8 @@
 import "./App.css";
-import TemplateEditor from "./components/TemplateEditor";
-import VariableList from "./components/VariableList";
+import TemplateDesigner from "./components/TemplateDesigner";
 
 function App() {
-  return (
-    <div>
-      <VariableList />
-      <TemplateEditor />
-    </div>
-  );
+  return <TemplateDesigner />;
 }
 
 export default App;
