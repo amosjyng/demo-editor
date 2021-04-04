@@ -1,13 +1,13 @@
 import React from "react";
 import VariableList from "./VariableList";
-import Set from "immutable";
+import { Set } from "immutable";
 import TemplateEditor from "./TemplateEditor";
 
 class TemplateDesigner extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      variables: Set.fromJS(["foo", "bar", "baz"]),
+      variables: Set.of("foo", "bar", "baz"),
       newVariable: "",
     };
   }
@@ -19,10 +19,13 @@ class TemplateDesigner extends React.Component {
   addVariable = (e) => {
     e.preventDefault();
 
-    this.setState({
-      variables: this.state.variables.push(this.state.newVariable),
-      newVariable: "",
-    });
+    const newVariable = this.state.newVariable.trim();
+    if (newVariable.length > 0) {
+      this.setState({
+        variables: this.state.variables.add(newVariable),
+        newVariable: "",
+      });
+    }
   };
 
   render() {
