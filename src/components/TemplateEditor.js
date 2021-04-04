@@ -47,9 +47,52 @@ class TemplateEditor extends React.Component {
     const initSelection = SelectionState.createEmpty(selection.getStartKey());
     const selectionStart = selection.getStartOffset();
     // the paramSelection contains only the $ and a space after it
-    // There is a space so that we can continue appending to a single-character
-    // entity. This is a workaround given the constraints imposed by Draft.js'
-    // mental model of how things work.
+    //
+    // Draft.js enforces a specific mental model of how entities work:
+    //
+    //  1. Entities without characters do not exist. As such, we'll need to
+    //     actually insert a $ (or some other placeholder) to ensure that the
+    //     parameter entity gets displayed.
+    //  2. A new character inputted by the user will only contribute to an
+    //     entity if that new character is sandwiched in between other
+    //     characters belonging to that entity. As such, we'll need to insert
+    //     a "magic" space after the $ as well, to ensure that the user can
+    //     continue typing the parameter's name.
+    //
+    // These limitations appy to prepending/appending text for highlighted
+    // entities as well, not just parameters. This has several implications
+    // around usability:
+    //
+    //  1. All stray single-spaced entities should be removed. We could arrive
+    //     at this state in several ways:
+    //
+    //       * The user cursor is at "a| ", and the user presses backspace
+    //       * The user cursor is at "|a ", and the user presses delete
+    //       * The user has a selection "[ab] " and deletes it (the selection
+    //         could actually potentially span over non-entity portions of the
+    //         text as well)
+    //
+    //     There might yet be other edge cases that I have not thought of. The
+    //     most secure method of ensuring this does not happen would be to
+    //     systematically identify such strays by removing all such entities
+    //     after every edit. This should be fine for performance
+    //     if the templates remain small. In case users start making long
+    //     templates, we could switch at that point to hunting down all the
+    //     edge cases where this could possibly occur. This is the approach
+    //     that has been implemented.
+    //
+    //     An alternative would be rendering them as having no HTML at all,
+    //     effectively completely hiding them. While systematic, this also
+    //     produces hiccups in the editing wherein the user could press an
+    //     arrow key without their cursor moving.
+    //  2. Add the magic space back in if the user happens to have deleted it.
+    //     The cursor should still move left when the user presses backspace.
+    //
+    //     An alternative would be pretending like the magic space isn't there
+    //     at all, and moving the cursor an extra step in the direction the
+    //     user's arrow keys/delete button moved in. But that would remove the
+    //     option for the user to append to the entity, defeating the whole
+    //     point of the magic space in the first place.
     const paramSelection = initSelection
       .set("anchorOffset", selectionStart)
       .set("focusOffset", selectionStart + 2);
@@ -95,6 +138,44 @@ class TemplateEditor extends React.Component {
     }
   };
 
+  removeStrayEntities = (contentState) => {
+    for (let [blockKey, block] of contentState.getBlockMap()) {
+      block.findEntityRanges(
+        (charMetadata) => {
+          return charMetadata.getEntity() !== null;
+        },
+        (start, end) => {
+          console.log("start is " + start + " and end is " + end);
+          if (start + 1 === end && block.getText()[start] === " ") {
+            contentState = this.removeEntity(
+              contentState,
+              blockKey,
+              start,
+              end
+            );
+          } else {
+            const entityKey = block.getEntityAt(start);
+            const entity = contentState.getEntity(entityKey);
+            if (
+              entity.getType() === PARAM_ENTITY &&
+              block.getText()[start] !== "$"
+            ) {
+              // if user just deleted the dollar sign in a param entity for any
+              // reason, delete the rest of the entity as well
+              contentState = this.removeEntity(
+                contentState,
+                blockKey,
+                start,
+                end
+              );
+            }
+          }
+        }
+      );
+    }
+    return contentState;
+  };
+
   /** Create a new highlight in the template */
   onHighlight = (editorState) => {
     const selection = editorState.getSelection();
@@ -111,13 +192,15 @@ class TemplateEditor extends React.Component {
     ) {
       // none of the text changed, must be a selection change
       newState = this.onHighlight(newState);
+    } else {
+      newState = EditorState.set(newState, {
+        currentContent: this.removeStrayEntities(newState.getCurrentContent()),
+      });
     }
     this.setState({ editorState: newState });
   };
 
-  onRemoveEntity = (blockKey, start, end) => {
-    const editorState = this.state.editorState;
-    const contentState = editorState.getCurrentContent();
+  removeEntity = (contentState, blockKey, start, end) => {
     // assumption: user only wants to delete a highlight from one block at a
     // time, even if the highlight spans multiple blocks
     const initSelection = SelectionState.createEmpty(blockKey);
@@ -127,10 +210,17 @@ class TemplateEditor extends React.Component {
     // apparently this is the official way to remove entities
     // see https://github.com/facebook/draft-js/issues/182
     const removedEntity = Modifier.applyEntity(contentState, selection, null);
-    const removedContent = Modifier.removeRange(
-      removedEntity,
-      selection,
-      "forward"
+    return Modifier.removeRange(removedEntity, selection, "forward");
+  };
+
+  onRemoveEntity = (blockKey, start, end) => {
+    const editorState = this.state.editorState;
+    const contentState = editorState.getCurrentContent();
+    const removedContent = this.removeEntity(
+      contentState,
+      blockKey,
+      start,
+      end
     );
     const newEditorState = EditorState.set(editorState, {
       currentContent: removedContent,
