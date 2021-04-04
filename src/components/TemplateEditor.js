@@ -1,5 +1,11 @@
 import React from "react";
-import { CompositeDecorator, Editor, EditorState, Modifier } from "draft-js";
+import {
+  CompositeDecorator,
+  Editor,
+  EditorState,
+  Modifier,
+  SelectionState,
+} from "draft-js";
 import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 import ParameterEntity from "./ParameterEntity";
@@ -69,7 +75,8 @@ class TemplateEditor extends React.Component {
       if (existingEntityKey === null) {
         const withEntity = contentState.createEntity(
           HIGHLIGHT_ENTITY,
-          "MUTABLE"
+          "MUTABLE",
+          { entityRemover: this.onRemoveEntity }
         );
         const entityKey = withEntity.getLastCreatedEntityKey();
         console.log("New highlight " + entityKey);
@@ -81,17 +88,6 @@ class TemplateEditor extends React.Component {
         const newEditorState = EditorState.set(editorState, {
           currentContent: withHighlight,
         });
-        console.log(
-          "Entity created: " +
-            newEditorState
-              .getCurrentContent()
-              .getEntity(
-                newEditorState
-                  .getCurrentContent()
-                  .getBlockForKey(selection.getStartKey())
-                  .getEntityAt(selection.getStartOffset())
-              )
-        );
         return newEditorState;
       } else {
         console.log("Highlight already exists at location, not recreating.");
@@ -109,6 +105,52 @@ class TemplateEditor extends React.Component {
       newState = this.onHighlight(newState);
     }
     this.setState({ editorState: newState });
+  };
+
+  onRemoveEntity = (entityKey) => {
+    const editorState = this.state.editorState;
+    const contentState = editorState.getCurrentContent();
+    // It appears there's no way to retrieve the span of an entity directly
+    // from the content state. We could store the span in the entity's data,
+    // but then we would expose ourselves to bugs where the stored span goes
+    // out of sync with the current span. For greater simplicity, we will do a
+    // full search for this entity across all blocks.
+    //
+    // This could present a problem if the template is really long, in which
+    // case we should consider storing the span, modifying Draft.js (though
+    // the chances of a patch being accepted are likely low), or perhaps even
+    // using a different rich text editor.
+    let removedContent = contentState;
+    for (const block of contentState.getBlocksAsArray()) {
+      block.findEntityRanges(
+        (charMetadata) => {
+          return charMetadata.getEntity() === entityKey;
+        },
+        (start, end) => {
+          const initSelection = SelectionState.createEmpty(block.getKey());
+          const selection = initSelection
+            .set("anchorOffset", start)
+            .set("focusOffset", end);
+          // apparently this is the official way to remove entities
+          // see https://github.com/facebook/draft-js/issues/182
+          const removedEntity = Modifier.applyEntity(
+            removedContent,
+            selection,
+            null
+          );
+          removedContent = Modifier.removeRange(
+            removedEntity,
+            selection,
+            "forward"
+          );
+          // can't exit early because an entity might span multiple blocks
+        }
+      );
+    }
+    const newEditorState = EditorState.set(editorState, {
+      currentContent: removedContent,
+    });
+    this.setState({ editorState: newEditorState });
   };
 
   componentDidMount() {
