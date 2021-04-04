@@ -146,6 +146,9 @@ class TemplateEditor extends React.Component {
       EntityType.PARAMETER,
       this.onRemoveEntity
     );
+    if (newEditorState === null) {
+      return; // do nothing if new entity could not be created
+    }
 
     // move cursor to right after the $
     const dollarCursor = constructCaret(
@@ -246,6 +249,9 @@ class TemplateEditor extends React.Component {
       EntityType.HIGHLIGHT,
       this.onRemoveEntity
     );
+    if (highlightedEntity === null) {
+      return editorState; // don't do anything else if entity already exists
+    }
     const patched = EditorState.set(highlightedEntity, {
       currentContent: this.patchEntities(highlightedEntity.getCurrentContent()),
     });

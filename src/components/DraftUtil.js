@@ -53,7 +53,10 @@ export function getEditorMultiInfo(editorState, customSelection) {
   };
 }
 
-/** Create a new removeable entity in the content. */
+/**
+ * Create a new removeable entity in the content. Returns null if entity
+ * already exists, otherwise returns the new editor state.
+ */
 export function createRemoveableEntity(
   selection,
   editorState,
@@ -64,26 +67,21 @@ export function createRemoveableEntity(
     editorState,
     selection
   );
-  if (existingEntityKey === null) {
-    // we pass the entityRemover in a roundabout way here because there
-    // doesn't appear to be a straightforward way to get it directly to
-    // HighlightEntity via props
-    const withEntity = contentState.createEntity(entityType, "MUTABLE", {
-      entityRemover: entityRemover,
-    });
-    const entityKey = withEntity.getLastCreatedEntityKey();
-    const withHighlight = Modifier.applyEntity(
-      withEntity,
-      selection,
-      entityKey
-    );
-    const newEditorState = EditorState.set(editorState, {
-      currentContent: withHighlight,
-    });
-    return newEditorState;
-  } else {
-    return editorState;
+  if (existingEntityKey !== null) {
+    return null;
   }
+  // we pass the entityRemover in a roundabout way here because there
+  // doesn't appear to be a straightforward way to get it directly to
+  // HighlightEntity via props
+  const withEntity = contentState.createEntity(entityType, "MUTABLE", {
+    entityRemover: entityRemover,
+  });
+  const entityKey = withEntity.getLastCreatedEntityKey();
+  const withHighlight = Modifier.applyEntity(withEntity, selection, entityKey);
+  const newEditorState = EditorState.set(editorState, {
+    currentContent: withHighlight,
+  });
+  return newEditorState;
 }
 
 /**
