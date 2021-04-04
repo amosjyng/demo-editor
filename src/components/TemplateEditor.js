@@ -26,6 +26,16 @@ class TemplateEditor extends React.Component {
     this.editor = React.createRef();
   }
 
+  rangedSelection = (blockKey, start, end) => {
+    return SelectionState.createEmpty(blockKey)
+      .set("anchorOffset", start)
+      .set("focusOffset", end);
+  };
+
+  caretAt = (blockKey, position) => {
+    return this.rangedSelection(blockKey, position, position);
+  };
+
   /** Create a strategy to identify highlights in a block */
   highlightStrategy = (block, callback) => {
     block.findEntityRanges((charMetadata) => {
@@ -44,7 +54,6 @@ class TemplateEditor extends React.Component {
       currentContent: withDollar,
     });
 
-    const initSelection = SelectionState.createEmpty(selection.getStartKey());
     const selectionStart = selection.getStartOffset();
     // the paramSelection contains only the $ and a space after it
     //
@@ -93,9 +102,11 @@ class TemplateEditor extends React.Component {
     //     user's arrow keys/delete button moved in. But that would remove the
     //     option for the user to append to the entity, defeating the whole
     //     point of the magic space in the first place.
-    const paramSelection = initSelection
-      .set("anchorOffset", selectionStart)
-      .set("focusOffset", selectionStart + 2);
+    const paramSelection = this.rangedSelection(
+      selection.getStartKey(),
+      selectionStart,
+      selectionStart + 2
+    );
     const newEditorState = this.createEntity(
       paramSelection,
       editorWithDollar,
@@ -103,9 +114,10 @@ class TemplateEditor extends React.Component {
     );
 
     // move cursor to right after the $
-    const dollarCursor = initSelection
-      .set("anchorOffset", selectionStart + 1)
-      .set("focusOffset", selectionStart + 1);
+    const dollarCursor = this.caretAt(
+      selection.getStartKey(),
+      selectionStart + 1
+    );
     const dollarCursorEditor = EditorState.forceSelection(
       newEditorState,
       dollarCursor
@@ -176,13 +188,55 @@ class TemplateEditor extends React.Component {
     );
   };
 
+  /**
+   * Adds magic spacing back in to entity. Should call this function after
+   * removeStrayEntities to avoid letting the magic spacing mess with the
+   * deletion.
+   */
+  addMagicSpace = (contentState) => {
+    return this.iterateEntities(
+      contentState,
+      (currentState, blockKey, block, start, end) => {
+        const entityKey = block.getEntityAt(start);
+        if (block.getText()[end - 1] !== " ") {
+          return Modifier.insertText(
+            currentState,
+            this.caretAt(blockKey, end),
+            " ",
+            undefined,
+            entityKey
+          );
+        } else {
+          return currentState;
+        }
+      }
+    );
+  };
+
+  patchEntities = (contentState) => {
+    const straysRemoved = this.removeStrayEntities(contentState);
+    const magicSpaceAdded = this.addMagicSpace(straysRemoved);
+    return magicSpaceAdded;
+  };
+
   /** Create a new highlight in the template */
   onHighlight = (editorState) => {
     const selection = editorState.getSelection();
-    if (!selection.isCollapsed()) {
-      return this.createEntity(selection, editorState, HIGHLIGHT_ENTITY);
+    if (selection.isCollapsed()) {
+      return editorState;
+    } else {
+      const highlightedEntity = this.createEntity(
+        selection,
+        editorState,
+        HIGHLIGHT_ENTITY
+      );
+      const patched = EditorState.set(highlightedEntity, {
+        currentContent: this.patchEntities(
+          highlightedEntity.getCurrentContent()
+        ),
+      });
+      return patched;
     }
-    return editorState;
   };
 
   onChange = (newState) => {
@@ -194,7 +248,7 @@ class TemplateEditor extends React.Component {
       newState = this.onHighlight(newState);
     } else {
       newState = EditorState.set(newState, {
-        currentContent: this.removeStrayEntities(newState.getCurrentContent()),
+        currentContent: this.patchEntities(newState.getCurrentContent()),
       });
     }
     this.setState({ editorState: newState });
