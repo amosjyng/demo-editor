@@ -1,6 +1,6 @@
 /** This file is for convenience functions with Draft.js */
 
-import { SelectionState } from "draft-js";
+import { SelectionState, Modifier, EditorState } from "draft-js";
 
 /** Create a selection spanning within a single block. */
 export function constructSelection(blockKey, start, end) {
@@ -27,4 +27,36 @@ export function iterateEntities(contentState, callback) {
     );
   }
   return contentState;
+}
+
+/** Create a new removeable entity in the content. */
+export function createRemoveableEntity(
+  selection,
+  editorState,
+  entityType,
+  entityRemover
+) {
+  const contentState = editorState.getCurrentContent();
+  const block = contentState.getBlockForKey(selection.getStartKey());
+  const existingEntityKey = block.getEntityAt(selection.getStartOffset());
+  if (existingEntityKey === null) {
+    // we pass the entityRemover in a roundabout way here because there
+    // doesn't appear to be a straightforward way to get it directly to
+    // HighlightEntity via props
+    const withEntity = contentState.createEntity(entityType, "MUTABLE", {
+      entityRemover: entityRemover,
+    });
+    const entityKey = withEntity.getLastCreatedEntityKey();
+    const withHighlight = Modifier.applyEntity(
+      withEntity,
+      selection,
+      entityKey
+    );
+    const newEditorState = EditorState.set(editorState, {
+      currentContent: withHighlight,
+    });
+    return newEditorState;
+  } else {
+    return editorState;
+  }
 }

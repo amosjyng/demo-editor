@@ -18,6 +18,7 @@ import { Card } from "react-bootstrap";
 import {
   constructCaret,
   constructSelection,
+  createRemoveableEntity,
   iterateEntities,
 } from "./DraftUtil";
 
@@ -28,7 +29,7 @@ class TemplateEditor extends React.Component {
     super(props);
     const decorator = new CompositeDecorator([
       {
-        strategy: this.highlightStrategy,
+        strategy: this.allEntitiesStrategy,
         component: HighlightEntity,
       },
     ]);
@@ -55,8 +56,8 @@ class TemplateEditor extends React.Component {
     }
   };
 
-  /** Identify entities in a block */
-  highlightStrategy = (block, callback) => {
+  /** Identify all entities in a block */
+  allEntitiesStrategy = (block, callback) => {
     block.findEntityRanges((charMetadata) => {
       return charMetadata.getEntity() !== null;
     }, callback);
@@ -125,10 +126,11 @@ class TemplateEditor extends React.Component {
       selectionStart,
       selectionStart + 2
     );
-    const newEditorState = this.createEntity(
+    const newEditorState = createRemoveableEntity(
       paramSelection,
       editorWithDollar,
-      EntityType.PARAMETER
+      EntityType.PARAMETER,
+      this.onRemoveEntity
     );
 
     // move cursor to right after the $
@@ -148,32 +150,6 @@ class TemplateEditor extends React.Component {
   onParameterize = (e) => {
     e.preventDefault();
     this.parameterizeCurrentPosition();
-  };
-
-  createEntity = (selection, editorState, entityType) => {
-    const contentState = editorState.getCurrentContent();
-    const block = contentState.getBlockForKey(selection.getStartKey());
-    const existingEntityKey = block.getEntityAt(selection.getStartOffset());
-    if (existingEntityKey === null) {
-      // we pass the entityRemover in a roundabout way here because there
-      // doesn't appear to be a straightforward way to get it directly to
-      // HighlightEntity via props
-      const withEntity = contentState.createEntity(entityType, "MUTABLE", {
-        entityRemover: this.onRemoveEntity,
-      });
-      const entityKey = withEntity.getLastCreatedEntityKey();
-      const withHighlight = Modifier.applyEntity(
-        withEntity,
-        selection,
-        entityKey
-      );
-      const newEditorState = EditorState.set(editorState, {
-        currentContent: withHighlight,
-      });
-      return newEditorState;
-    } else {
-      return editorState;
-    }
   };
 
   /** Get the current location of the caret within the input field */
@@ -245,10 +221,11 @@ class TemplateEditor extends React.Component {
   /** Create a new highlight in the template */
   onHighlight = (editorState) => {
     const selection = editorState.getSelection();
-    const highlightedEntity = this.createEntity(
+    const highlightedEntity = createRemoveableEntity(
       selection,
       editorState,
-      EntityType.HIGHLIGHT
+      EntityType.HIGHLIGHT,
+      this.onRemoveEntity
     );
     const patched = EditorState.set(highlightedEntity, {
       currentContent: this.patchEntities(highlightedEntity.getCurrentContent()),
