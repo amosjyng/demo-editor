@@ -69,7 +69,13 @@ class TemplateEditor extends React.Component {
   /** Create a new parameter in the template */
   parameterizeCurrentPosition = () => {
     const editorState = this.state.editorState;
-    const { selection, contentState } = getEditorMultiInfo(editorState);
+    const { selection, contentState, entityKey } = getEditorMultiInfo(
+      editorState
+    );
+    if (entityKey !== null) {
+      // only create a new parameter if we're not already inside an entity
+      return;
+    }
     // Draft.js expects insertions to occur at collapsed selections, so make
     // sure to collapse it first before doing so. In the future, if there
     // exists such a selection, we may actually want to convert the whole
