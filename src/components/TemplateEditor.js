@@ -290,12 +290,15 @@ class TemplateEditor extends React.Component {
     this.setState({ editorState: newEditorState });
   };
 
-  onReplaceEntity = (replacement) => {
+  /**
+   * Callback for when the user selects something from the autocomplete
+   * dropdown
+   */
+  onReplaceParam = (replacement) => {
     const editorState = this.state.editorState;
-    const contentState = editorState.getCurrentContent();
     // while there is the chance of an asynchronous bug popping up, it seems
     // rather unlikely for a local application
-    const { entitySelection, entityKey } = this.getActiveParam();
+    const { contentState, entitySelection, entityKey } = this.getActiveParam();
     const replacedContent = Modifier.replaceText(
       contentState,
       entitySelection,
@@ -329,7 +332,8 @@ class TemplateEditor extends React.Component {
       return null;
     }
     return {
-      entityKey: entityKey,
+      contentState,
+      entityKey,
       entitySelection: getEntitySelection(block, entityKey),
     };
   };
@@ -385,7 +389,7 @@ class TemplateEditor extends React.Component {
         <Autocomplete
           match={entityString}
           variables={this.props.variables}
-          onReplaceEntity={this.onReplaceEntity}
+          onReplaceEntity={this.onReplaceParam}
           x={caret.x}
           y={caret.y}
         />
