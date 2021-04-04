@@ -138,42 +138,42 @@ class TemplateEditor extends React.Component {
     }
   };
 
-  removeStrayEntities = (contentState) => {
+  iterateEntities = (contentState, callback) => {
     for (let [blockKey, block] of contentState.getBlockMap()) {
       block.findEntityRanges(
         (charMetadata) => {
           return charMetadata.getEntity() !== null;
         },
         (start, end) => {
-          console.log("start is " + start + " and end is " + end);
-          if (start + 1 === end && block.getText()[start] === " ") {
-            contentState = this.removeEntity(
-              contentState,
-              blockKey,
-              start,
-              end
-            );
-          } else {
-            const entityKey = block.getEntityAt(start);
-            const entity = contentState.getEntity(entityKey);
-            if (
-              entity.getType() === PARAM_ENTITY &&
-              block.getText()[start] !== "$"
-            ) {
-              // if user just deleted the dollar sign in a param entity for any
-              // reason, delete the rest of the entity as well
-              contentState = this.removeEntity(
-                contentState,
-                blockKey,
-                start,
-                end
-              );
-            }
-          }
+          contentState = callback(contentState, blockKey, block, start, end);
         }
       );
     }
     return contentState;
+  };
+
+  removeStrayEntities = (contentState) => {
+    return this.iterateEntities(
+      contentState,
+      (currentState, blockKey, block, start, end) => {
+        if (start + 1 === end && block.getText()[start] === " ") {
+          return this.removeEntity(currentState, blockKey, start, end);
+        } else {
+          const entityKey = block.getEntityAt(start);
+          const entity = currentState.getEntity(entityKey);
+          if (
+            entity.getType() === PARAM_ENTITY &&
+            block.getText()[start] !== "$"
+          ) {
+            // if user just deleted the dollar sign in a param entity for any
+            // reason, delete the rest of the entity as well
+            return this.removeEntity(currentState, blockKey, start, end);
+          } else {
+            return currentState;
+          }
+        }
+      }
+    );
   };
 
   /** Create a new highlight in the template */
