@@ -464,23 +464,27 @@ class TemplateEditor extends React.Component {
     // functionality to the position of the entity itself.
     //
     // One solution would be to render the autocomplete div as part of
-    // HighlightEntity rendering. This doesn't work too well because a cursor
-    // change does not cause the HighlightEntity to be rerendered, and so the
-    // rendered autocomplete div stays up forever until the content is changed.
-    // Which makes sense as an assumption by Draft.js -- why would the content
-    // blocks need to rerender if the content state didn't change?
+    // HighlightEntity rendering. This requires passing more information to the
+    // HighlightEntity so that it not only knows when to render the dropdown,
+    // but also has enough information to create the dropdown itself. This
+    // would also require forcing the previous HighlightEntity to update
+    // whenever the caret moves. This is because only content changes will
+    // cause the HighlightEntity to rerender, and if we don't want the
+    // autocomplete dropdown to linger around indefinitely after the user moves
+    // their caret away, we'll have to manually force the update to happen
+    // ourselves.
     //
-    // Another solution would be to grab the position of the button that has
-    // been rendered by the HighlightEntity corresponding to the active entity.
-    // In order for that to happen, we would need it to tell us where it is.
-    // The purpose of saveEntityRef is to capture and save this
-    // information. We cannot simply get this on the fly because
-    // HighlightEntity does not rerender on caret changes, and we run into the
-    // same problem as noted above. This is the solution in place.
+    // Another solution would be to grab the position of the corresponding
+    // HighlightEntity after it is rendered, and to move the autocomplete
+    // dropdown to wherever the HighlightEntity is. In order for that to
+    // happen, we need some way of identifying the right one and asking it for
+    // its location. This is why the entityRefs map exists. Note that we can't
+    // simply cache the position of the entity after it mounts, because its
+    // position might shift.
     //
-    // This is still not good enough, because characters in between can throw
-    // it out of sync. That is why we always force it to update when in an
-    // active entity.
+    // In retrospect, I should have realized that it is possible to traverse
+    // the children of React components, and done that instead of saving a copy
+    // of every child. That will be a good thing to do in a future refactor.
     const activeParam = this.getActiveParam();
     const entityString = this.getActiveParamString(activeParam);
     let autocomplete = false;
