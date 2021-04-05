@@ -24,6 +24,10 @@ span.entity.btn, .entity.btn span {
   cursor: text;
 }
 
+span.entity.btn:first-child {
+  margin-left: 0;
+}
+
 .entity.btn .entity-rm-btn {
   min-width: 16px;
   min-height: 16px;
