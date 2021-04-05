@@ -15,7 +15,7 @@ export default function VariableList(props) {
   return (
     <Card body>
       <Card.Title>Known variables</Card.Title>
-      <Form>
+      <Form onSubmit={props.addVariable}>
         <Form.Row>
           <Col>
             <Form.Control
