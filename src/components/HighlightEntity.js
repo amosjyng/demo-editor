@@ -9,13 +9,34 @@ class HighlightEntity extends React.Component {
     super(props);
     const entityKey = props.entityKey;
     const contentState = props.contentState;
-    const { entityRemover } = contentState.getEntity(entityKey).getData();
+    const {
+      entityRemover,
+      updateEntityRenderPosition,
+    } = contentState.getEntity(entityKey).getData();
     this.entityRemover = entityRemover;
+    this.updateEntityRenderPosition = updateEntityRenderPosition;
+    this.button = React.createRef();
   }
 
   removeEntity = () => {
     this.entityRemover(this.props.blockKey, this.props.start, this.props.end);
   };
+
+  invokePositionCallback = () => {
+    this.updateEntityRenderPosition(
+      this.props.blockKey,
+      this.props.entityKey,
+      this.button.current.getBoundingClientRect()
+    );
+  };
+
+  componentDidMount() {
+    this.invokePositionCallback();
+  }
+
+  componentDidUpdate() {
+    this.invokePositionCallback();
+  }
 
   render() {
     let variant = "secondary"; // for unknown future variants
@@ -32,8 +53,10 @@ class HighlightEntity extends React.Component {
     } else if (entityType === EntityType.HIGHLIGHT) {
       variant = "danger"; //red
     }
+
     return (
       <Button
+        ref={this.button}
         key={this.props.entityKey}
         as="span"
         variant={variant}

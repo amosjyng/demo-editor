@@ -11,7 +11,7 @@ import Toolbar from "./Toolbar";
 import "draft-js/dist/Draft.css";
 import HighlightEntity from "./HighlightEntity";
 import PropTypes from "prop-types";
-import Immutable from "immutable";
+import { Iterable, Map } from "immutable";
 import Autocomplete from "./Autocomplete";
 import EntityType from "./EntityType";
 import { Card } from "react-bootstrap";
@@ -23,6 +23,7 @@ import {
   getText,
   getEditorMultiInfo,
   iterateEntities,
+  entityType,
 } from "./DraftUtil";
 
 const PARAM_BINDING = "template-parameterize";
@@ -36,9 +37,43 @@ class TemplateEditor extends React.Component {
         component: HighlightEntity,
       },
     ]);
-    this.state = { editorState: EditorState.createEmpty(decorator) };
+    this.state = {
+      editorState: EditorState.createEmpty(decorator),
+      entityPositions: Map(),
+    };
     this.editor = React.createRef();
+    this.entityData = {
+      entityRemover: this.onRemoveEntity,
+      getActiveParam: this.getActiveParam,
+      updateEntityRenderPosition: this.updateEntityRenderPosition,
+    };
   }
+
+  /**
+   * Assuming that all entityKey's in a block are unique, this returns a string
+   * uniquely identifying an entity in a block.
+   */
+  getEntityID = (blockKey, entityKey) => {
+    return blockKey + "/" + entityKey;
+  };
+
+  /**
+   * Save the entity's position. See "AUTOCOMPLETE POSITIONING" for details
+   * on why this is needed.
+   */
+  updateEntityRenderPosition = (blockKey, entityKey, entityPosition) => {
+    const entityID = this.getEntityID(blockKey, entityKey);
+    if (
+      entityType(this.state.editorState, entityKey) === EntityType.PARAMETER
+    ) {
+      this.setState({
+        entityPositions: this.state.entityPositions.set(
+          entityID,
+          entityPosition
+        ),
+      });
+    }
+  };
 
   /** Send off a custom command if the user enters a $ */
   templateKeyBinding = (e) => {
@@ -150,7 +185,7 @@ class TemplateEditor extends React.Component {
       paramSelection,
       editorWithDollar,
       EntityType.PARAMETER,
-      this.onRemoveEntity
+      this.entityData
     );
     if (newEditorState === null) {
       return; // do nothing if new entity could not be created
@@ -173,16 +208,6 @@ class TemplateEditor extends React.Component {
   onParameterize = (e) => {
     e.preventDefault();
     this.parameterizeCurrentPosition();
-  };
-
-  /** Get the current location of the caret within the input field */
-  getCaretLocation = () => {
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) {
-      return null;
-    }
-    const range = selection.getRangeAt(0);
-    return range.getBoundingClientRect();
   };
 
   /**
@@ -253,7 +278,7 @@ class TemplateEditor extends React.Component {
       selection,
       editorState,
       EntityType.HIGHLIGHT,
-      this.onRemoveEntity
+      this.entityData
     );
     if (highlightedEntity === null) {
       return editorState; // don't do anything else if entity already exists
@@ -405,8 +430,7 @@ class TemplateEditor extends React.Component {
   };
 
   /** Get the text for the param that the user is currently typing in. */
-  getActiveParamString = () => {
-    const activeParam = this.getActiveParam();
+  getActiveParamString = (activeParam) => {
     if (activeParam === null) {
       return null;
     }
@@ -430,9 +454,15 @@ class TemplateEditor extends React.Component {
   }
 
   render() {
-    // Positioning the autocomplete this way using the caret position is
-    // rather janky. Ideally we could tie the autocomplete functionality to the
-    // position of the entity itself.
+    // ### AUTOCOMPLETE POSITIONING ###
+    // We need to align the autocomplete somehow to appear right under where
+    // the user is typing. We could do so by asking the browser for the current
+    // position of the caret and creating the dropdown based on that. However,
+    // creating the autocomplete this way using the caret position is
+    // rather janky. The dropdown will shift to the right as the user types,
+    // but even more importantly, the browser often reports the caret position
+    // as (0, 0) on initial load. Ideally we could tie the autocomplete
+    // functionality to the position of the entity itself.
     //
     // One solution would be to render the autocomplete div as part of
     // HighlightEntity rendering. This doesn't work too well because a cursor
@@ -444,24 +474,31 @@ class TemplateEditor extends React.Component {
     // Another solution would be to grab the position of the button that has
     // been rendered by the HighlightEntity corresponding to the active entity.
     // In order for that to happen, we would need it to tell us where it is.
-    // Perhaps we could do this via passing in another callback function to the
-    // HighlightEntity.
-    const entityString = this.getActiveParamString();
-    const caret = this.getCaretLocation();
-    const x = caret === null ? 0 : caret.x;
-    const y = caret === null ? 0 : caret.y;
-    const autocomplete =
-      entityString === null ? (
-        false
-      ) : (
-        <Autocomplete
-          match={entityString}
-          variables={this.props.variables}
-          onReplaceEntity={this.onReplaceParam}
-          x={x}
-          y={y}
-        />
+    // The purpose of updateEntityRenderPosition is to capture and save this
+    // information. We cannot simply get this on the fly because
+    // HighlightEntity does not rerender on caret changes, and we run into the
+    // same problem as noted above. This is the solution in place.
+    const activeParam = this.getActiveParam();
+    const entityString = this.getActiveParamString(activeParam);
+    let autocomplete = false;
+    if (entityString !== null) {
+      const entityID = this.getEntityID(
+        activeParam.blockKey,
+        activeParam.entityKey
       );
+      const entityPosition = this.state.entityPositions.get(entityID);
+      if (entityPosition !== undefined) {
+        autocomplete = (
+          <Autocomplete
+            match={entityString}
+            variables={this.props.variables}
+            onReplaceEntity={this.onReplaceParam}
+            x={entityPosition.left}
+            y={entityPosition.top}
+          />
+        );
+      }
+    }
     return (
       <Card body>
         <Toolbar onParameterize={this.onParameterize} />
@@ -480,7 +517,7 @@ class TemplateEditor extends React.Component {
 }
 
 TemplateEditor.propTypes = {
-  variables: PropTypes.instanceOf(Immutable.Iterable),
+  variables: PropTypes.instanceOf(Iterable),
 };
 
 export default TemplateEditor;

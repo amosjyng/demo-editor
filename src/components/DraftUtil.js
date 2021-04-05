@@ -74,7 +74,7 @@ export function createRemoveableEntity(
   selection,
   editorState,
   entityType,
-  entityRemover
+  callbacks
 ) {
   const { contentState, entityKey: existingEntityKey } = getEditorMultiInfo(
     editorState,
@@ -91,18 +91,25 @@ export function createRemoveableEntity(
   if (endingEntityKey !== null) {
     return null;
   }
-  // we pass the entityRemover in a roundabout way here because there
+  // we pass callback functions in a roundabout way here because there
   // doesn't appear to be a straightforward way to get it directly to
   // HighlightEntity via props
-  const withEntity = contentState.createEntity(entityType, "MUTABLE", {
-    entityRemover: entityRemover,
-  });
+  const withEntity = contentState.createEntity(
+    entityType,
+    "MUTABLE",
+    callbacks
+  );
   const entityKey = withEntity.getLastCreatedEntityKey();
   const withHighlight = Modifier.applyEntity(withEntity, selection, entityKey);
   const newEditorState = EditorState.set(editorState, {
     currentContent: withHighlight,
   });
   return newEditorState;
+}
+
+/** Returns the type of an entity */
+export function entityType(editorState, entityKey) {
+  return editorState.getCurrentContent().getEntity(entityKey).getType();
 }
 
 /**
