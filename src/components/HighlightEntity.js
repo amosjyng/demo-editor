@@ -40,7 +40,7 @@ class HighlightEntity extends React.Component {
         className="entity"
       >
         {this.props.children}
-        <span onClick={this.removeEntity}>X</span>
+        <span className="entity-rm-btn" onClick={this.removeEntity}></span>
       </Button>
     );
   }
