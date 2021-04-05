@@ -30,6 +30,16 @@ export function iterateEntities(contentState, callback) {
 }
 
 /**
+ * Return the block and the associated entity key, if any, at the given
+ * offset.
+ */
+function getBlockAndEntityAt(contentState, blockKey, offset) {
+  const block = contentState.getBlockForKey(blockKey);
+  const entityKey = block.getEntityAt(offset);
+  return { block, entityKey };
+}
+
+/**
  * Get multiple pieces of information about the editor at once, instead of
  * breaking it out over several lines. A custom selection may optionally be
  * passed in, in which case block information for that selection will be
@@ -42,14 +52,17 @@ export function getEditorMultiInfo(editorState, customSelection) {
       ? editorState.getSelection()
       : customSelection;
   const blockKey = selection.getAnchorKey();
-  const block = contentState.getBlockForKey(blockKey);
-  const entityKey = block.getEntityAt(selection.getAnchorOffset());
+  const { block, entityKey } = getBlockAndEntityAt(
+    contentState,
+    selection.getAnchorKey(),
+    selection.getAnchorOffset()
+  );
   return {
-    contentState: contentState,
-    selection: selection,
-    blockKey: blockKey,
-    block: block,
-    entityKey: entityKey,
+    contentState,
+    selection,
+    blockKey,
+    block,
+    entityKey,
   };
 }
 
@@ -68,6 +81,14 @@ export function createRemoveableEntity(
     selection
   );
   if (existingEntityKey !== null) {
+    return null;
+  }
+  const { entityKey: endingEntityKey } = getBlockAndEntityAt(
+    contentState,
+    selection.getFocusKey(),
+    selection.getFocusOffset() - 1
+  );
+  if (endingEntityKey !== null) {
     return null;
   }
   // we pass the entityRemover in a roundabout way here because there
