@@ -40,6 +40,7 @@ class TemplateEditor extends React.Component {
     this.state = {
       editorState: EditorState.createEmpty(decorator),
       entityPositions: Map(),
+      positionsRefreshed: false,
     };
     this.editor = React.createRef();
     this.entityData = {
@@ -71,6 +72,7 @@ class TemplateEditor extends React.Component {
           entityID,
           entityPosition
         ),
+        positionsRefreshed: true,
       });
     }
   };
@@ -323,7 +325,10 @@ class TemplateEditor extends React.Component {
         currentContent: this.patchEntities(newEditorState.getCurrentContent()),
       });
     }
-    this.setState({ editorState: newEditorState });
+    this.setState({
+      editorState: newEditorState,
+      positionsRefreshed: false,
+    });
   };
 
   /**
@@ -478,6 +483,10 @@ class TemplateEditor extends React.Component {
     // information. We cannot simply get this on the fly because
     // HighlightEntity does not rerender on caret changes, and we run into the
     // same problem as noted above. This is the solution in place.
+    //
+    // This is still not good enough, because characters in between can throw
+    // it out of sync. That is why we always force it to update when in an
+    // active entity.
     const activeParam = this.getActiveParam();
     const entityString = this.getActiveParamString(activeParam);
     let autocomplete = false;
@@ -486,8 +495,9 @@ class TemplateEditor extends React.Component {
         activeParam.blockKey,
         activeParam.entityKey
       );
-      const entityPosition = this.state.entityPositions.get(entityID);
-      if (entityPosition !== undefined) {
+      const entry = this.state.entityPositions.get(entityID);
+      if (entry !== undefined) {
+        const { entityPosition, componentRef } = entry;
         autocomplete = (
           <Autocomplete
             match={entityString}
@@ -497,6 +507,9 @@ class TemplateEditor extends React.Component {
             y={entityPosition.top}
           />
         );
+        if (!this.state.positionsRefreshed) {
+          componentRef.forceUpdate();
+        }
       }
     }
     return (

@@ -23,11 +23,10 @@ class HighlightEntity extends React.Component {
   };
 
   invokePositionCallback = () => {
-    this.updateEntityRenderPosition(
-      this.props.blockKey,
-      this.props.entityKey,
-      this.button.current.getBoundingClientRect()
-    );
+    this.updateEntityRenderPosition(this.props.blockKey, this.props.entityKey, {
+      entityPosition: this.button.current.getBoundingClientRect(),
+      componentRef: this,
+    });
   };
 
   componentDidMount() {
