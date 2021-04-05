@@ -7,7 +7,11 @@ class Toolbar extends React.Component {
   render() {
     return (
       <ButtonToolbar className="Toolbar">
-        <ToolbarButton symbol="$" onParameterize={this.props.onParameterize} />
+        <ToolbarButton
+          symbol="$"
+          description="Add a new field"
+          onParameterize={this.props.onParameterize}
+        />
       </ButtonToolbar>
     );
   }

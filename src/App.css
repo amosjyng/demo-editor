@@ -37,6 +37,10 @@ form {
   margin-bottom: 10px;
 }
 
+.btn-toolbar .btn {
+  font-weight: bold;
+}
+
 .variable-list {
   margin-bottom: -5px;
 }
