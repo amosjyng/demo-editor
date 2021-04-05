@@ -21,7 +21,9 @@ class HighlightEntity extends React.Component {
     let variant = "secondary"; // for unknown future variants
     // can't create this in constructor because this DOM node gets reused, and
     // so the color will end up being the wrong cached color if a preceding
-    // entity gets deleted, and that entity's DOM node is used for this one
+    // entity gets deleted, and that entity's DOM node is used for this one.
+    // This could probably be solved by working with React's reconciliation,
+    // but that can be done in the future.
     const entityType = this.props.contentState
       .getEntity(this.props.entityKey)
       .getType();
@@ -31,7 +33,12 @@ class HighlightEntity extends React.Component {
       variant = "danger"; //red
     }
     return (
-      <Button as="span" variant={variant} className="entity">
+      <Button
+        key={this.props.entityKey}
+        as="span"
+        variant={variant}
+        className="entity"
+      >
         {this.props.children}
         <span onClick={this.removeEntity}>X</span>
       </Button>
