@@ -28,7 +28,7 @@ class HighlightEntity extends React.Component {
       .getEntity(this.props.entityKey)
       .getType();
     if (entityType === EntityType.PARAMETER) {
-      variant = "primary"; // blue
+      variant = "warning"; // yellow
     } else if (entityType === EntityType.HIGHLIGHT) {
       variant = "danger"; //red
     }
