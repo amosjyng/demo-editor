@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { ContentState } from "draft-js";
-import EntityType from "./EntityType";
+import EntityType from "../EntityType";
 import { Button } from "react-bootstrap";
 
 class HighlightEntity extends React.Component {

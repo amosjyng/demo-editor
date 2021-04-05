@@ -7,13 +7,13 @@ import {
   Modifier,
   SelectionState,
 } from "draft-js";
-import Toolbar from "./Toolbar";
+import Toolbar from "../toolbar/Toolbar";
 import "draft-js/dist/Draft.css";
 import HighlightEntity from "./HighlightEntity";
 import PropTypes from "prop-types";
 import { Iterable, Map } from "immutable";
 import Autocomplete from "./Autocomplete";
-import EntityType from "./EntityType";
+import EntityType from "../EntityType";
 import { Card } from "react-bootstrap";
 import {
   constructCaret,
@@ -24,7 +24,7 @@ import {
   getEditorMultiInfo,
   iterateEntities,
   entityType,
-} from "./DraftUtil";
+} from "../DraftUtil";
 
 const PARAM_BINDING = "template-parameterize";
 

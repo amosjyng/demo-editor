@@ -1,7 +1,7 @@
 import React from "react";
 import VariableList from "./VariableList";
 import { Set } from "immutable";
-import TemplateEditor from "./TemplateEditor";
+import TemplateEditor from "./editor/TemplateEditor";
 
 class TemplateDesigner extends React.Component {
   constructor(props) {
