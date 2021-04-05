@@ -8,7 +8,7 @@ class Autocomplete extends React.Component {
   render() {
     const variableListItems = [];
     for (const variable of this.props.variables) {
-      if (variable.includes(this.props.match)) {
+      if (variable.includes(this.props.match) && variable != this.props.match) {
         variableListItems.push(
           <ListGroup.Item
             key={variable}
@@ -26,6 +26,7 @@ class Autocomplete extends React.Component {
         }
       }
     }
+
     const positioning = {
       position: "fixed",
       left: this.props.x,
