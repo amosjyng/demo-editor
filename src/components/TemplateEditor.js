@@ -39,14 +39,13 @@ class TemplateEditor extends React.Component {
     ]);
     this.state = {
       editorState: EditorState.createEmpty(decorator),
-      entityPositions: Map(),
-      positionsRefreshed: false,
+      entityRefs: Map(),
     };
     this.editor = React.createRef();
     this.entityData = {
       entityRemover: this.onRemoveEntity,
       getActiveParam: this.getActiveParam,
-      updateEntityRenderPosition: this.updateEntityRenderPosition,
+      saveEntityRef: this.saveEntityRef,
     };
   }
 
@@ -59,20 +58,16 @@ class TemplateEditor extends React.Component {
   };
 
   /**
-   * Save the entity's position. See "AUTOCOMPLETE POSITIONING" for details
-   * on why this is needed.
+   * Save a ref to the entity component. See "AUTOCOMPLETE POSITIONING" for
+   * details on why this is needed.
    */
-  updateEntityRenderPosition = (blockKey, entityKey, entityPosition) => {
+  saveEntityRef = (blockKey, entityKey, entityRef) => {
     const entityID = this.getEntityID(blockKey, entityKey);
     if (
       entityType(this.state.editorState, entityKey) === EntityType.PARAMETER
     ) {
       this.setState({
-        entityPositions: this.state.entityPositions.set(
-          entityID,
-          entityPosition
-        ),
-        positionsRefreshed: true,
+        entityRefs: this.state.entityRefs.set(entityID, entityRef),
       });
     }
   };
@@ -327,7 +322,6 @@ class TemplateEditor extends React.Component {
     }
     this.setState({
       editorState: newEditorState,
-      positionsRefreshed: false,
     });
   };
 
@@ -479,7 +473,7 @@ class TemplateEditor extends React.Component {
     // Another solution would be to grab the position of the button that has
     // been rendered by the HighlightEntity corresponding to the active entity.
     // In order for that to happen, we would need it to tell us where it is.
-    // The purpose of updateEntityRenderPosition is to capture and save this
+    // The purpose of saveEntityRef is to capture and save this
     // information. We cannot simply get this on the fly because
     // HighlightEntity does not rerender on caret changes, and we run into the
     // same problem as noted above. This is the solution in place.
@@ -495,21 +489,18 @@ class TemplateEditor extends React.Component {
         activeParam.blockKey,
         activeParam.entityKey
       );
-      const entry = this.state.entityPositions.get(entityID);
-      if (entry !== undefined) {
-        const { entityPosition, componentRef } = entry;
+      const savedComponent = this.state.entityRefs.get(entityID);
+      if (savedComponent !== undefined) {
+        const { left, top } = savedComponent.getCurrentBoundingRect();
         autocomplete = (
           <Autocomplete
             match={entityString}
             variables={this.props.variables}
             onReplaceEntity={this.onReplaceParam}
-            x={entityPosition.left}
-            y={entityPosition.top}
+            x={left}
+            y={top}
           />
         );
-        if (!this.state.positionsRefreshed) {
-          componentRef.forceUpdate();
-        }
       }
     }
     return (

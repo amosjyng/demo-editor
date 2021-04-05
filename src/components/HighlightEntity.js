@@ -9,33 +9,21 @@ class HighlightEntity extends React.Component {
     super(props);
     const entityKey = props.entityKey;
     const contentState = props.contentState;
-    const {
-      entityRemover,
-      updateEntityRenderPosition,
-    } = contentState.getEntity(entityKey).getData();
+    const { entityRemover, saveEntityRef } = contentState
+      .getEntity(entityKey)
+      .getData();
     this.entityRemover = entityRemover;
-    this.updateEntityRenderPosition = updateEntityRenderPosition;
     this.button = React.createRef();
+    saveEntityRef(this.props.blockKey, this.props.entityKey, this);
   }
 
   removeEntity = () => {
     this.entityRemover(this.props.blockKey, this.props.start, this.props.end);
   };
 
-  invokePositionCallback = () => {
-    this.updateEntityRenderPosition(this.props.blockKey, this.props.entityKey, {
-      entityPosition: this.button.current.getBoundingClientRect(),
-      componentRef: this,
-    });
+  getCurrentBoundingRect = () => {
+    return this.button.current.getBoundingClientRect();
   };
-
-  componentDidMount() {
-    this.invokePositionCallback();
-  }
-
-  componentDidUpdate() {
-    this.invokePositionCallback();
-  }
 
   render() {
     let variant = "secondary"; // for unknown future variants
